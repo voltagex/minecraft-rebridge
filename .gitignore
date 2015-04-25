@@ -1,20 +1,7 @@
-## gradle
-/.gradle
-/build
-
-## ForgeGradle
-/run
-
-## eclipse
-/.settings
-/.metadata
-/.classpath
-/.project
-/bin
-
-## intellij
-/out
-/.idea
-/*.iml
-/*.ipr
-/*.iws
+/*
+!/src
+!build.gradle
+!*.project
+!/gradle
+!gradlew
+!gradlew.bat
