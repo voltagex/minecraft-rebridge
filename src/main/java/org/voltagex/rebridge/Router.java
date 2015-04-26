@@ -4,24 +4,41 @@ import com.google.common.base.Predicate;
 import com.google.common.base.Predicates;
 import com.google.common.collect.Collections2;
 import com.google.common.collect.Iterables;
+import com.google.gson.reflect.TypeToken;
 import fi.iki.elonen.NanoHTTPD;
-import net.minidev.json.JSONObject;
 import org.reflections.Reflections;
 import org.reflections.ReflectionsException;
 import org.reflections.scanners.*;
 import org.reflections.util.ClasspathHelper;
 import org.reflections.util.ConfigurationBuilder;
 import org.voltagex.rebridge.annotations.Controller;
+import org.voltagex.rebridge.entities.JsonResponse;
 import org.voltagex.rebridge.predicates.ReflectionFilters;
 
 import javax.annotation.Nullable;
 import java.lang.reflect.Method;
-import java.util.Iterator;
-import java.util.Map;
-import java.util.Set;
+import java.lang.reflect.Type;
+import java.util.*;
+
+import com.google.gson.*;
 
 public class Router
 {
+    private static GsonBuilder gsonBuilder = new GsonBuilder();
+    private static Gson gson;
+
+    private final static String MIMEType = "application/json";
+
+    public Router()
+    {
+        Type abstractMapType = new TypeToken<AbstractMap.SimpleEntry<String,String>>() {}.getClass();
+        Object serializer = new org.voltagex.rebridge.serializers.AbstractMapSerializer();
+
+        gsonBuilder.registerTypeAdapter(abstractMapType,
+                serializer );
+        gson = gsonBuilder.create();
+    }
+
     public NanoHTTPD.Response route(NanoHTTPD.IHTTPSession session)
     {
         String method = session.getMethod().name();
@@ -52,7 +69,6 @@ public class Router
             //todo: redirect/bad request or something
             return processBadRequest(session);
         }
-
 
         if (controller.isEmpty())
         {
@@ -98,13 +114,10 @@ public class Router
             Iterator<Class<?>> classIterator = types.iterator();
             Class<?> selectedClass = classIterator.next();
             Method selectedMethod = getMethodByName(selectedClass, method);
-
             try
             {
-                Object responseObject = selectedMethod.invoke(selectedClass.newInstance());
-                JSONObject responseJSON = new JSONObject();
-                responseJSON.put("result", responseObject.toString());
-                return new NanoHTTPD.Response(NanoHTTPD.Response.Status.OK, "application/json", responseJSON.toString());
+                JsonResponse responseObject = (JsonResponse)(selectedMethod.invoke(selectedClass.newInstance()));
+                return new NanoHTTPD.Response(responseObject.getStatus(), MIMEType, gson.toJson(responseObject.getResponseBody()));
 
             }
 
@@ -113,9 +126,6 @@ public class Router
               return processBadRequest(session, e);
             }
         }
-
-        //return processBadRequest(session,"method not found");
-
     }
 
     private NanoHTTPD.Response processPost(NanoHTTPD.IHTTPSession session)
@@ -123,40 +133,33 @@ public class Router
         return null;
     }
 
+    //todo: clean up bad request processing
     private NanoHTTPD.Response processBadRequest(NanoHTTPD.IHTTPSession session)
     {
         return new NanoHTTPD.Response
                 (NanoHTTPD.Response.Status.BAD_REQUEST,
-                        acceptHeaderToMIME(session), "Bad request for " + session.getUri());
+                        MIMEType, "Bad request for " + session.getUri());
     }
 
     private NanoHTTPD.Response processBadRequest(NanoHTTPD.IHTTPSession session, Exception exception)
     {
+        String exceptionMessage = gson.toJson(exception.getStackTrace());
+
         return new NanoHTTPD.Response
                 (NanoHTTPD.Response.Status.BAD_REQUEST,
-                        acceptHeaderToMIME(session),
-                        exception.getMessage());
+                        MIMEType,exceptionMessage
+                        );
     }
 
     private NanoHTTPD.Response processBadRequest(NanoHTTPD.IHTTPSession session, String message)
     {
         return new NanoHTTPD.Response
                 (NanoHTTPD.Response.Status.BAD_REQUEST,
-                        acceptHeaderToMIME(session),
+                        MIMEType,
                         message);
     }
 
-    private String acceptHeaderToMIME(NanoHTTPD.IHTTPSession session)
-    {
-        Map<String, String> headers = session.getHeaders();
-
-        if (headers.containsKey("accept"))
-        {
-            return headers.get("accept"); //todo: make this work
-        }
-        return "text/plain";
-    }
-
+    //todo: put this into its own class
     @Nullable
     private Method getMethodByName(Class<?> aClass, String name)
     {
@@ -167,7 +170,6 @@ public class Router
                 return method;
             }
         }
-
         return null;
     }
 }
