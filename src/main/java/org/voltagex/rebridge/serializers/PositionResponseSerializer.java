@@ -3,9 +3,10 @@ package org.voltagex.rebridge.serializers;
 import com.google.gson.*;
 import org.voltagex.rebridge.entities.PositionResponse;
 
+import javax.annotation.Nullable;
 import java.lang.reflect.Type;
 
-public class PositionResponseSerializer implements JsonSerializer<PositionResponse>
+public class PositionResponseSerializer implements JsonSerializer<PositionResponse>, JsonDeserializer<PositionResponse>
 {
     /**
      * Serializes a Position response to
@@ -33,4 +34,27 @@ public class PositionResponseSerializer implements JsonSerializer<PositionRespon
         parent.add("position", position);
         return parent;
     }
+
+    @Override
+    public PositionResponse deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context) throws JsonParseException
+    {
+        JsonObject wrapper = json.getAsJsonObject().get("position").getAsJsonObject();
+        Float x = wrapper.has("x") ? safeGetJsonAsFloat(wrapper.get("x")) : null;
+        Float y = wrapper.has("y") ? safeGetJsonAsFloat(wrapper.get("y")) : null;
+        Float z = wrapper.has("z") ? safeGetJsonAsFloat(wrapper.get("z")) : null;
+        return new PositionResponse(x,y,z);
+    }
+
+    private Float safeGetJsonAsFloat(JsonElement element)
+    {
+        //todo: this method probably isn't needed
+        if (element.equals(null))
+        {
+            return null;
+        }
+
+        return element.getAsFloat();
+    }
+
+
 }

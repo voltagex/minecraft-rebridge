@@ -15,45 +15,45 @@ public class PositionResponse extends ServiceResponse
      * @param y
      * @param z
      */
-    public PositionResponse(float x, float y, float z)
+    public PositionResponse(Float x, Float y, Float z)
     {
         this.x = x;
         this.y = y;
         this.z = z;
     }
 
-    private float x;
-    private float y;
+    private Float x;
+    private Float y;
 
-    public float getZ()
+    public Float getZ()
     {
         return z;
     }
 
-    public void setZ(float z)
+    public void setZ(Float z)
     {
         this.z = z;
     }
 
-    public float getX()
+    public Float getX()
     {
         return x;
     }
 
-    public void setX(float x)
+    public void setX(Float x)
     {
         this.x = x;
     }
 
-    public float getY()
+    public Float getY()
     {
         return y;
     }
 
-    public void setY(float y)
+    public void setY(Float y)
     {
         this.y = y;
     }
 
-    private float z;
+    private Float z;
 }

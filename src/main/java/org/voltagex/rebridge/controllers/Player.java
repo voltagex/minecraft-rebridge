@@ -13,12 +13,13 @@ import org.voltagex.rebridge.entities.StatusResponse;
 public class Player
 {
     private static net.minecraft.client.Minecraft minecraft = Minecraft.getMinecraft();
+
     public ServiceResponse getName()
     {
         SimpleResponse response = new SimpleResponse();
         if (minecraft.thePlayer != null)
         {
-            response.setKeyValue("name",minecraft.thePlayer.getName());
+            response.setKeyValue("name", minecraft.thePlayer.getName());
         }
 
         else
@@ -40,7 +41,7 @@ public class Player
             y = pos.getY();
             z = pos.getZ();
 
-            PositionResponse response = new PositionResponse(x,y,z);
+            PositionResponse response = new PositionResponse(x, y, z);
 
             return response;
         }
@@ -56,9 +57,27 @@ public class Player
 
     public ServiceResponse postPosition(PositionResponse position)
     {
+        BlockPos currentPos = minecraft.thePlayer.getPosition();
         if (minecraft.thePlayer != null)
         {
-            minecraft.thePlayer.setPosition(position.getX(),position.getY(),position.getZ());
+            if (position.getX() == null)
+            {
+                position.setX((float) currentPos.getX());
+            }
+
+            if (position.getY() == null)
+            {
+                position.setY((float) currentPos.getY());
+            }
+
+            if (position.getZ() == null)
+            {
+                position.setZ((float) currentPos.getZ());
+            }
+
+
+            minecraft.thePlayer.setPositionAndUpdate(position.getX(), position.getY(), position.getZ());
+
             return new StatusResponse(NanoHTTPD.Response.Status.ACCEPTED);
 
         }
@@ -70,10 +89,5 @@ public class Player
             response.setKeyValue("error", "No player on server");
             return response;
         }
-    }
-
-    public ServiceResponse postTest(SimpleResponse test)
-    {
-        return new SimpleResponse("userInput", test.getValue());
     }
 }

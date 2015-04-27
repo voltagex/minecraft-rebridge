@@ -138,6 +138,7 @@ public class Router
             Method selectedMethod = findMethodForRequest("post", selectedController, action);
             Type type = findTypeForRequest(selectedMethod);
             ServiceResponse requestObject = gson.fromJson(postBody, type);
+
             Object retVal = selectedMethod.invoke(selectedController.newInstance(), requestObject);
 
 
