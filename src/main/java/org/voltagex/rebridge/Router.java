@@ -4,6 +4,9 @@ import com.google.common.base.Predicate;
 import com.google.common.collect.Iterables;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonPrimitive;
+import com.google.gson.stream.JsonReader;
 import fi.iki.elonen.NanoHTTPD;
 import org.reflections.Reflections;
 import org.reflections.scanners.*;
@@ -16,7 +19,10 @@ import org.voltagex.rebridge.entities.SimpleResponse;
 import serializers.PositionResponseSerializer;
 import serializers.SimpleResponseSerializer;
 
+import java.io.InputStreamReader;
+import java.lang.reflect.Executable;
 import java.lang.reflect.Method;
+import java.lang.reflect.Type;
 import java.util.HashSet;
 
 public class Router
@@ -69,13 +75,14 @@ public class Router
 
     private NanoHTTPD.Response processGet(NanoHTTPD.IHTTPSession session)
     {
+        //todo: handle parameters
+
         String uri = session.getUri();
         String[] segments = uri.split("/");
         final String controller = segments[1];
         String action = segments[2];
-        if (segments.equals(null))
+        if (segments.equals(null)) //todo: redirect/bad request or something on request for "/"
         {
-            //todo: redirect/bad request or something
             return processBadRequest(session);
         }
 
@@ -108,6 +115,45 @@ public class Router
         }
     }
 
+    private NanoHTTPD.Response processPost(NanoHTTPD.IHTTPSession session)
+    {
+        String uri = session.getUri();
+        String[] segments = uri.split("/");
+        final String controller = segments[1];
+        String action = segments[2];
+        ServiceResponse body = null;
+
+        try
+        {
+            String contentLength = session.getHeaders().get("content-length");
+            int length = Integer.parseInt(contentLength);
+
+            if (length == 0)
+            {
+               return processBadRequest(session,"Request body can't be empty");
+            }
+
+            //https://github.com/NanoHttpd/nanohttpd/issues/99
+            String postBody = session.parsePost();
+
+            //todo: work out if there's a way so that the controller is not doing deserialization
+            Class<?> selectedController = findControllerForRequest(controller);
+            Method selectedMethod = findMethodForRequest("post",selectedController,action);
+            Type type = findTypeForRequest(selectedMethod);
+            ServiceResponse requestObject = gson.fromJson(postBody,type);
+            Object retVal = selectedMethod.invoke(selectedController.newInstance(),requestObject);
+
+
+            return new NanoHTTPD.Response(NanoHTTPD.Response.Status.ACCEPTED, MIMEType, type.toString());
+        }
+
+        catch (Exception e)
+        {
+            return processBadRequest(session,e);
+        }
+    }
+
+
     private Class<?> findControllerForRequest(final String controller)
     {
         return Iterables.find(avaliableControllers, new Predicate<Class<?>>()
@@ -131,36 +177,39 @@ public class Router
         }
         return null;
     }
-
-
-    private NanoHTTPD.Response processPost(NanoHTTPD.IHTTPSession session)
+    //todo: HACK: this is not good, it's imposing constraints on the variable order for actions
+    private Type findTypeForRequest(Method selectedMethod)
     {
-        return null;
+       return selectedMethod.getParameterTypes()[0];
     }
 
     //todo: clean up bad request processing
     private NanoHTTPD.Response processBadRequest(NanoHTTPD.IHTTPSession session)
     {
-        return new NanoHTTPD.Response
-                (NanoHTTPD.Response.Status.BAD_REQUEST,
-                        MIMEType, "Bad request for " + session.getUri());
+       return processBadRequest(session, "Bad request for " + session.getUri());
     }
 
     private NanoHTTPD.Response processBadRequest(NanoHTTPD.IHTTPSession session, Exception exception)
     {
-        String exceptionMessage = gson.toJson(exception.getStackTrace());
+        JsonObject exceptionJson = new JsonObject();
+        exceptionJson.add("message",new JsonPrimitive(exception.getMessage()));
+        exceptionJson.add("stacktrace", gson.toJsonTree(exception.getStackTrace()));
+
 
         return new NanoHTTPD.Response
                 (NanoHTTPD.Response.Status.BAD_REQUEST,
-                        MIMEType, exceptionMessage
+                        MIMEType, exceptionJson.toString()
                 );
     }
 
     private NanoHTTPD.Response processBadRequest(NanoHTTPD.IHTTPSession session, String message)
     {
+        JsonObject errorMessage = new JsonObject();
+        errorMessage.add("error", new JsonPrimitive(message));
+
         return new NanoHTTPD.Response
                 (NanoHTTPD.Response.Status.BAD_REQUEST,
                         MIMEType,
-                        message);
+                        errorMessage.toString());
     }
 }

@@ -7,6 +7,7 @@ import org.voltagex.rebridge.annotations.Controller;
 import org.voltagex.rebridge.entities.PositionResponse;
 import org.voltagex.rebridge.entities.ServiceResponse;
 import org.voltagex.rebridge.entities.SimpleResponse;
+import org.voltagex.rebridge.entities.StatusResponse;
 
 @Controller
 public class Player
@@ -51,5 +52,28 @@ public class Player
             response.setKeyValue("error", "No player on server");
             return response;
         }
+    }
+
+    public ServiceResponse postPosition(PositionResponse position)
+    {
+        if (minecraft.thePlayer != null)
+        {
+            minecraft.thePlayer.setPosition(position.getX(),position.getY(),position.getZ());
+            return new StatusResponse(NanoHTTPD.Response.Status.ACCEPTED);
+
+        }
+
+        else
+        {
+            SimpleResponse response = new SimpleResponse();
+            response.setStatus(NanoHTTPD.Response.Status.NOT_FOUND);
+            response.setKeyValue("error", "No player on server");
+            return response;
+        }
+    }
+
+    public ServiceResponse postTest(SimpleResponse test)
+    {
+        return new SimpleResponse("userInput", test.getValue());
     }
 }

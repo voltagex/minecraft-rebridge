@@ -824,6 +824,7 @@ public abstract class NanoHTTPD {
          * @arg files - map to modify
          */
         void parseBody(Map<String, String> files) throws IOException, ResponseException;
+        String parsePost() throws IOException, ResponseException;
     }
 
     protected class HTTPSession implements IHTTPSession {
@@ -941,6 +942,37 @@ public abstract class NanoHTTPD {
             } finally {
                 tempFileManager.clear();
             }
+        }
+
+        @Override
+        public String parsePost() throws IOException, ResponseException {
+            long size;
+            if (headers.containsKey("content-length")) {
+                size = Integer.parseInt(headers.get("content-length"));
+            } else {
+                size = 0;
+            }
+
+            // Now read all the body and write it to f
+            byte[] buf = new byte[512];
+            byte[] output = new byte[0];
+
+            //http://stackoverflow.com/a/9133993/229631
+            ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+
+            while (rlen > 0 && size > 0) {
+                rlen = inputStream.read(buf, 0, (int)Math.min(size, 512));
+                if (size < 512) {
+                    outputStream.write(buf,0,(int)size);
+                    rlen = 0;
+                }
+
+                size -= rlen;
+                if (rlen > 0) {
+                    outputStream.write(buf);
+                }
+            }
+            return new String(outputStream.toByteArray());
         }
 
         @Override
