@@ -2,35 +2,54 @@ package org.voltagex.rebridge.controllers;
 
 import fi.iki.elonen.NanoHTTPD;
 import net.minecraft.client.Minecraft;
+import net.minecraft.util.BlockPos;
 import org.voltagex.rebridge.annotations.Controller;
-import org.voltagex.rebridge.entities.JsonResponse;
-
-import java.util.AbstractMap;
-import java.util.HashMap;
-import java.util.Map;
-
-/**
- * Created by Adam on 4/26/2015.
- */
+import org.voltagex.rebridge.entities.PositionResponse;
+import org.voltagex.rebridge.entities.ServiceResponse;
+import org.voltagex.rebridge.entities.SimpleResponse;
 
 @Controller
 public class Player
 {
     private static net.minecraft.client.Minecraft minecraft = Minecraft.getMinecraft();
-    public JsonResponse getName()
+    public ServiceResponse getName()
     {
-        JsonResponse response = new JsonResponse();
+        SimpleResponse response = new SimpleResponse();
         if (minecraft.thePlayer != null)
         {
-            response.setStatus(NanoHTTPD.Response.Status.OK);
-            response.setResponseBody(new AbstractMap.SimpleEntry<String, String>("name", minecraft.thePlayer.getName()));
+            response.setKeyValue("name",minecraft.thePlayer.getName());
         }
 
         else
         {
             response.setStatus(NanoHTTPD.Response.Status.NOT_FOUND);
-            response.setResponseBody(new AbstractMap.SimpleEntry<String, String>("error", "No player on server"));
+            response.setKeyValue("error", "No player on server");
         }
         return response;
+    }
+
+    public ServiceResponse getPosition()
+    {
+        if (minecraft.thePlayer != null)
+        {
+            float x, y, z;
+            //todo: possible to remove dependency on Minecraft type here?
+            BlockPos pos = minecraft.thePlayer.getPosition();
+            x = pos.getX();
+            y = pos.getY();
+            z = pos.getZ();
+
+            PositionResponse response = new PositionResponse(x,y,z);
+
+            return response;
+        }
+
+        else
+        {
+            SimpleResponse response = new SimpleResponse();
+            response.setStatus(NanoHTTPD.Response.Status.NOT_FOUND);
+            response.setKeyValue("error", "No player on server");
+            return response;
+        }
     }
 }

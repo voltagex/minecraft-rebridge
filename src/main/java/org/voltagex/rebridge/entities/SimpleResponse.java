@@ -1,0 +1,44 @@
+package org.voltagex.rebridge.entities;
+
+import com.google.gson.Gson;
+import fi.iki.elonen.NanoHTTPD;
+
+import java.util.Objects;
+
+public class SimpleResponse extends ServiceResponse
+{
+
+    private String key;
+    private String value;
+
+    /**
+     * Represents a single key => value
+     */
+    public SimpleResponse()
+    {
+    }
+
+    /**
+     * Represents a single key => value
+     * @param Key
+     * @param Value
+     */
+    public SimpleResponse(String Key, String Value)
+    {
+        key = Key;
+        value = Value;
+    }
+
+    public String getKey() { return key; }
+    public void setKey(String value) { this.key = value; }
+
+    public String getValue() { return value; }
+    public void setValue(String value) { this.value = value; }
+
+    public void setKeyValue(String key, String value)
+    {
+        this.key = key;
+        this.value = value;
+    }
+
+}
