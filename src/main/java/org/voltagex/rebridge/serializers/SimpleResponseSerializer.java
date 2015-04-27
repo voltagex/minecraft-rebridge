@@ -1,4 +1,4 @@
-package serializers;
+package org.voltagex.rebridge.serializers;
 
 import com.google.gson.*;
 import org.voltagex.rebridge.entities.SimpleResponse;

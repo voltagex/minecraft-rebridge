@@ -1,7 +1,5 @@
 package org.voltagex.rebridge.entities;
 
-import serializers.SimpleResponseSerializer;
-
 public class PositionResponse extends ServiceResponse
 {
     /**

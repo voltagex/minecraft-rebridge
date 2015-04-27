@@ -6,7 +6,6 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
-import com.google.gson.stream.JsonReader;
 import fi.iki.elonen.NanoHTTPD;
 import org.reflections.Reflections;
 import org.reflections.scanners.*;
@@ -16,11 +15,9 @@ import org.voltagex.rebridge.annotations.Controller;
 import org.voltagex.rebridge.entities.PositionResponse;
 import org.voltagex.rebridge.entities.ServiceResponse;
 import org.voltagex.rebridge.entities.SimpleResponse;
-import serializers.PositionResponseSerializer;
-import serializers.SimpleResponseSerializer;
+import org.voltagex.rebridge.serializers.PositionResponseSerializer;
+import org.voltagex.rebridge.serializers.SimpleResponseSerializer;
 
-import java.io.InputStreamReader;
-import java.lang.reflect.Executable;
 import java.lang.reflect.Method;
 import java.lang.reflect.Type;
 import java.util.HashSet;
@@ -138,10 +135,10 @@ public class Router
 
             //todo: work out if there's a way so that the controller is not doing deserialization
             Class<?> selectedController = findControllerForRequest(controller);
-            Method selectedMethod = findMethodForRequest("post",selectedController,action);
+            Method selectedMethod = findMethodForRequest("post", selectedController, action);
             Type type = findTypeForRequest(selectedMethod);
-            ServiceResponse requestObject = gson.fromJson(postBody,type);
-            Object retVal = selectedMethod.invoke(selectedController.newInstance(),requestObject);
+            ServiceResponse requestObject = gson.fromJson(postBody, type);
+            Object retVal = selectedMethod.invoke(selectedController.newInstance(), requestObject);
 
 
             return new NanoHTTPD.Response(NanoHTTPD.Response.Status.ACCEPTED, MIMEType, type.toString());
