@@ -4,22 +4,33 @@ import fi.iki.elonen.NanoHTTPD;
 import net.minecraft.client.Minecraft;
 import net.minecraft.util.BlockPos;
 import org.voltagex.rebridge.annotations.Controller;
-import org.voltagex.rebridge.entities.PositionResponse;
-import org.voltagex.rebridge.entities.ServiceResponse;
-import org.voltagex.rebridge.entities.SimpleResponse;
-import org.voltagex.rebridge.entities.StatusResponse;
+import org.voltagex.rebridge.entities.*;
+import org.voltagex.rebridge.providers.IMinecraftProvider;
+
+import java.util.ArrayList;
+import java.util.List;
 
 @Controller
 public class Player
 {
-    private static net.minecraft.client.Minecraft minecraft = Minecraft.getMinecraft();
+    private static IMinecraftProvider provider;
+
+    private Player()
+    {
+
+    }
+
+    public Player(IMinecraftProvider provider)
+    {
+        this.provider = provider;
+    }
 
     public ServiceResponse getName()
     {
-        SimpleResponse response = new SimpleResponse();
-        if (minecraft.thePlayer != null)
+        Simple response = new Simple();
+        if (provider.player().playerIsOnServer())
         {
-            response.setKeyValue("name", minecraft.thePlayer.getName());
+            response.setKeyValue("name", provider.player().getName());
         }
 
         else
@@ -32,62 +43,47 @@ public class Player
 
     public ServiceResponse getPosition()
     {
-        if (minecraft.thePlayer != null)
+        if (provider.player().playerIsOnServer())
         {
-            float x, y, z;
-            //todo: possible to remove dependency on Minecraft type here?
-            BlockPos pos = minecraft.thePlayer.getPosition();
-            x = pos.getX();
-            y = pos.getY();
-            z = pos.getZ();
-
-            PositionResponse response = new PositionResponse(x, y, z);
-
-            return response;
+            return provider.player().getPosition();
         }
 
         else
         {
-            SimpleResponse response = new SimpleResponse();
-            response.setStatus(NanoHTTPD.Response.Status.NOT_FOUND);
-            response.setKeyValue("error", "No player on server");
-            return response;
+            return NoPlayerResponse();
         }
     }
 
-    public ServiceResponse postPosition(PositionResponse position)
+    public ServiceResponse postPosition(Position position)
     {
-        BlockPos currentPos = minecraft.thePlayer.getPosition();
-        if (minecraft.thePlayer != null)
+        if (provider.player().playerIsOnServer())
         {
-            if (position.getX() == null)
-            {
-                position.setX((float) currentPos.getX());
-            }
-
-            if (position.getY() == null)
-            {
-                position.setY((float) currentPos.getY());
-            }
-
-            if (position.getZ() == null)
-            {
-                position.setZ((float) currentPos.getZ());
-            }
-
-
-            minecraft.thePlayer.setPositionAndUpdate(position.getX(), position.getY(), position.getZ());
-
+            provider.player().setPosition(position);
             return new StatusResponse(NanoHTTPD.Response.Status.ACCEPTED);
-
         }
 
         else
         {
-            SimpleResponse response = new SimpleResponse();
-            response.setStatus(NanoHTTPD.Response.Status.NOT_FOUND);
-            response.setKeyValue("error", "No player on server");
-            return response;
+            return NoPlayerResponse();
         }
+    }
+
+    private ServiceResponse NoPlayerResponse()
+    {
+        Simple response = new Simple();
+        response.setStatus(NanoHTTPD.Response.Status.NOT_FOUND);
+        response.setKeyValue("error", "No player on server");
+        return response;
+    }
+
+    public ServiceResponse getInventory()
+    {
+        ListResponse response = provider.player().getInventory();
+        if (response == null)
+        {
+            return NoPlayerResponse();
+        }
+
+        return response;
     }
 }

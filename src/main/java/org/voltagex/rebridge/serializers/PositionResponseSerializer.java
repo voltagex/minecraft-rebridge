@@ -1,12 +1,11 @@
 package org.voltagex.rebridge.serializers;
 
 import com.google.gson.*;
-import org.voltagex.rebridge.entities.PositionResponse;
+import org.voltagex.rebridge.entities.Position;
 
-import javax.annotation.Nullable;
 import java.lang.reflect.Type;
 
-public class PositionResponseSerializer implements JsonSerializer<PositionResponse>, JsonDeserializer<PositionResponse>
+public class PositionResponseSerializer implements JsonSerializer<Position>, JsonDeserializer<Position>
 {
     /**
      * Serializes a Position response to
@@ -17,7 +16,7 @@ public class PositionResponseSerializer implements JsonSerializer<PositionRespon
      * @return
      */
     @Override
-    public JsonElement serialize(PositionResponse src, Type typeOfSrc, JsonSerializationContext context)
+    public JsonElement serialize(Position src, Type typeOfSrc, JsonSerializationContext context)
     {
 
         JsonPrimitive x = new JsonPrimitive(src.getX());
@@ -36,7 +35,7 @@ public class PositionResponseSerializer implements JsonSerializer<PositionRespon
     }
 
     @Override
-    public PositionResponse deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context) throws JsonParseException
+    public Position deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context) throws JsonParseException
     {
         JsonObject wrapper = json.getAsJsonObject();
         if (!wrapper.has("position"))
@@ -50,7 +49,7 @@ public class PositionResponseSerializer implements JsonSerializer<PositionRespon
         Float y = wrapper.has("y") ? wrapper.get("y").getAsFloat() : null;
         Float z = wrapper.has("z") ? wrapper.get("z").getAsFloat() : null;
 
-        return new PositionResponse(x,y,z);
+        return new Position(x,y,z);
     }
 
 

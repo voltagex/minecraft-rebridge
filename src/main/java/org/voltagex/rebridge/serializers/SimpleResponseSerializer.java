@@ -1,14 +1,14 @@
 package org.voltagex.rebridge.serializers;
 
 import com.google.gson.*;
-import org.voltagex.rebridge.entities.SimpleResponse;
+import org.voltagex.rebridge.entities.Simple;
 
 import java.lang.reflect.Type;
 
-public class SimpleResponseSerializer implements JsonSerializer<SimpleResponse>
+public class SimpleResponseSerializer implements JsonSerializer<Simple>
 {
     /**
-     * Serializes a SimpleResponse to
+     * Serializes a Simple object to
      * {key: val}
      * @param src
      * @param typeOfSrc
@@ -16,11 +16,11 @@ public class SimpleResponseSerializer implements JsonSerializer<SimpleResponse>
      * @return
      */
     @Override
-    public JsonElement serialize(SimpleResponse src, Type typeOfSrc, JsonSerializationContext context)
+    public JsonElement serialize(Simple src, Type typeOfSrc, JsonSerializationContext context)
     {
         JsonObject keyValue = new JsonObject();
-        JsonPrimitive valueAsJson = new JsonPrimitive(src.getValue());
-        keyValue.add(src.getKey(), valueAsJson);
+        JsonPrimitive valueAsJson = new JsonPrimitive(src.getValue() == null ? "" : src.getValue());
+        keyValue.add(src.getKey() == null ? "" : src.getKey(), valueAsJson);
         return keyValue;
     }
 }

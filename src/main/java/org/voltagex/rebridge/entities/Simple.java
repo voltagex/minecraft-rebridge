@@ -5,7 +5,7 @@ import fi.iki.elonen.NanoHTTPD;
 
 import java.util.Objects;
 
-public class SimpleResponse extends ServiceResponse
+public class Simple extends ServiceResponse
 {
 
     private String key;
@@ -14,7 +14,7 @@ public class SimpleResponse extends ServiceResponse
     /**
      * Represents a single key => value
      */
-    public SimpleResponse()
+    public Simple()
     {
     }
 
@@ -23,7 +23,7 @@ public class SimpleResponse extends ServiceResponse
      * @param Key
      * @param Value
      */
-    public SimpleResponse(String Key, String Value)
+    public Simple(String Key, String Value)
     {
         key = Key;
         value = Value;

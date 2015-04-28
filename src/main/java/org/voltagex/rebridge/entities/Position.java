@@ -1,11 +1,11 @@
 package org.voltagex.rebridge.entities;
 
-public class PositionResponse extends ServiceResponse
+public class Position extends ServiceResponse
 {
     /**
      * Represents x, y, z coordinates from Minecraft (BlockPos)
      */
-    public PositionResponse()
+    public Position()
     {
     }
 
@@ -15,7 +15,7 @@ public class PositionResponse extends ServiceResponse
      * @param y
      * @param z
      */
-    public PositionResponse(Float x, Float y, Float z)
+    public Position(Float x, Float y, Float z)
     {
         this.x = x;
         this.y = y;

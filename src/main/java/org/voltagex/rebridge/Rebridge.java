@@ -9,6 +9,9 @@ import net.minecraftforge.fml.common.FMLModContainer;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.common.Mod.EventHandler;
 import net.minecraftforge.fml.common.event.FMLInitializationEvent;
+import org.voltagex.rebridge.providers.FakeMinecraftProvider;
+import org.voltagex.rebridge.providers.IMinecraftProvider;
+import org.voltagex.rebridge.providers.MinecraftProvider;
 
 import java.io.IOException;
 import java.net.SocketException;
@@ -16,8 +19,8 @@ import java.net.SocketException;
 @Mod(modid = Consts.MODID, version = Consts.VERSION)
 public class Rebridge extends NanoHTTPD
 {
-    private final Router router = new Router();
-
+    private static Router router;
+    private static IMinecraftProvider provider;
     public Rebridge()
     {
         //problem, MC freezes if the port can't be bound. Why?
@@ -27,6 +30,7 @@ public class Rebridge extends NanoHTTPD
     @EventHandler
     public void init(FMLInitializationEvent event)
     {
+        router = new Router(new MinecraftProvider());
         ServerRunner.run(Rebridge.class);
     }
 
@@ -38,6 +42,7 @@ public class Rebridge extends NanoHTTPD
 
     public static void main(String[] args)
     {
+        router = new Router(new FakeMinecraftProvider());
         ServerRunner.run(Rebridge.class);
         try
         {

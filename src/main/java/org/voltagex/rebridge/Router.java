@@ -12,12 +12,16 @@ import org.reflections.scanners.*;
 import org.reflections.util.ClasspathHelper;
 import org.reflections.util.ConfigurationBuilder;
 import org.voltagex.rebridge.annotations.Controller;
-import org.voltagex.rebridge.entities.PositionResponse;
+import org.voltagex.rebridge.entities.ListResponse;
+import org.voltagex.rebridge.entities.Position;
 import org.voltagex.rebridge.entities.ServiceResponse;
-import org.voltagex.rebridge.entities.SimpleResponse;
+import org.voltagex.rebridge.entities.Simple;
+import org.voltagex.rebridge.providers.IMinecraftProvider;
+import org.voltagex.rebridge.serializers.ListResponseSerializer;
 import org.voltagex.rebridge.serializers.PositionResponseSerializer;
 import org.voltagex.rebridge.serializers.SimpleResponseSerializer;
 
+import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
 import java.lang.reflect.Type;
 import java.util.HashSet;
@@ -29,11 +33,19 @@ public class Router
 
     private final static String MIMEType = "application/json";
     private static HashSet<Class<?>> avaliableControllers = new HashSet<Class<?>>();
+    private static IMinecraftProvider provider;
 
-    public Router()
+    private Router()
     {
-        gsonBuilder.registerTypeAdapter(SimpleResponse.class, new SimpleResponseSerializer());
-        gsonBuilder.registerTypeAdapter(PositionResponse.class, new PositionResponseSerializer());
+
+    }
+
+    public Router(IMinecraftProvider provider)
+    {
+        this.provider = provider;
+        gsonBuilder.registerTypeAdapter(Simple.class, new SimpleResponseSerializer());
+        gsonBuilder.registerTypeAdapter(Position.class, new PositionResponseSerializer());
+        gsonBuilder.registerTypeAdapter(ListResponse.class, new ListResponseSerializer());
         gson = gsonBuilder.create();
 
         HashSet<Class<?>> types;
@@ -55,14 +67,15 @@ public class Router
 
     public NanoHTTPD.Response route(NanoHTTPD.IHTTPSession session)
     {
+
         String method = session.getMethod().name();
         if (method.equals("GET"))
         {
-            return processGet(session);
+            return processGet(session,provider);
         }
         else if (method.equals("POST"))
         {
-            return processPost(session);
+            return processPost(session,provider);
         }
         else
         {
@@ -70,7 +83,7 @@ public class Router
         }
     }
 
-    private NanoHTTPD.Response processGet(NanoHTTPD.IHTTPSession session)
+    private NanoHTTPD.Response processGet(NanoHTTPD.IHTTPSession session, IMinecraftProvider provider)
     {
         //todo: handle parameters
 
@@ -100,7 +113,8 @@ public class Router
 
         try
         {
-            Object retVal = selectedMethod.invoke(selectedController.newInstance());
+            Constructor<?> controllerConstructor = selectedController.getConstructor(IMinecraftProvider.class);
+            Object retVal = selectedMethod.invoke(controllerConstructor.newInstance(provider));
             String json = gson.toJson(retVal);
 
             return new NanoHTTPD.Response(((ServiceResponse) retVal).getStatus(), MIMEType, json);
@@ -112,7 +126,7 @@ public class Router
         }
     }
 
-    private NanoHTTPD.Response processPost(NanoHTTPD.IHTTPSession session)
+    private NanoHTTPD.Response processPost(NanoHTTPD.IHTTPSession session, IMinecraftProvider provider)
     {
         String uri = session.getUri();
         String[] segments = uri.split("/");
@@ -133,14 +147,14 @@ public class Router
             //https://github.com/NanoHttpd/nanohttpd/issues/99
             String postBody = session.parsePost();
 
-            //todo: work out if there's a way so that the controller is not doing deserialization
             Class<?> selectedController = findControllerForRequest(controller);
             Method selectedMethod = findMethodForRequest("post", selectedController, action);
             Type type = findTypeForRequest(selectedMethod);
+
             ServiceResponse requestObject = gson.fromJson(postBody, type);
 
-            Object retVal = selectedMethod.invoke(selectedController.newInstance(), requestObject);
-
+            Constructor<?> controllerConstructor = selectedController.getConstructor(IMinecraftProvider.class);
+            Object retVal = selectedMethod.invoke(controllerConstructor.newInstance(provider),requestObject);
 
             return new NanoHTTPD.Response(NanoHTTPD.Response.Status.ACCEPTED, MIMEType, type.toString());
         }
@@ -192,7 +206,7 @@ public class Router
         JsonObject exceptionJson = new JsonObject();
 
         String message = exception.getMessage() == null ? "" : exception.getMessage();
-        exceptionJson.add("message",new JsonPrimitive(message));
+        exceptionJson.add("message",new JsonPrimitive(exception.toString() + ": " + message));
         exceptionJson.add("stacktrace", gson.toJsonTree(exception.getStackTrace()));
 
 
