@@ -190,6 +190,7 @@ public class Router
     private NanoHTTPD.Response processBadRequest(NanoHTTPD.IHTTPSession session, Exception exception)
     {
         JsonObject exceptionJson = new JsonObject();
+
         exceptionJson.add("message",new JsonPrimitive(exception.getMessage()));
         exceptionJson.add("stacktrace", gson.toJsonTree(exception.getStackTrace()));
 

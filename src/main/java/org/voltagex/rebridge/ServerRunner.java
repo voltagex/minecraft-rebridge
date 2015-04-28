@@ -23,6 +23,7 @@ public class ServerRunner
         try
         {
             server.start();
+            System.out.println("Server started\n");
         }
 
         catch (IOException ioe)
@@ -31,6 +32,5 @@ public class ServerRunner
             return;
         }
 
-        System.out.println("Server started\n");
     }
 }

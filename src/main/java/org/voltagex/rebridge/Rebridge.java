@@ -35,4 +35,18 @@ public class Rebridge extends NanoHTTPD
     {
         return router.route(session);
     }
+
+    public static void main(String[] args)
+    {
+        ServerRunner.run(Rebridge.class);
+        try
+        {
+            System.in.read();
+        }
+        catch (Throwable ignored)
+        {
+        }
+        System.out.println("Server stopped.\n");
+    }
+
 }
