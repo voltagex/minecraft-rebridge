@@ -78,7 +78,7 @@ public class Router
         String[] segments = uri.split("/");
         final String controller = segments[1];
         String action = segments[2];
-        if (segments.equals(null)) //todo: redirect/bad request or something on request for "/"
+        if (segments == null) //todo: redirect/bad request or something on request for "/"
         {
             return processBadRequest(session);
         }
@@ -90,7 +90,7 @@ public class Router
 
         //todo: decide whether some kind of "Action" type consisting of the Controller and the Method would be better here
         Class<?> selectedController = findControllerForRequest(controller);
-        if (selectedController.equals(null))
+        if (selectedController == null)
         {
             //todo: string.Format
             return processBadRequest(session, "Action " + action + " on " + controller + " not found"); //todo: return 404
@@ -191,7 +191,8 @@ public class Router
     {
         JsonObject exceptionJson = new JsonObject();
 
-        exceptionJson.add("message",new JsonPrimitive(exception.getMessage()));
+        String message = exception.getMessage() == null ? "" : exception.getMessage();
+        exceptionJson.add("message",new JsonPrimitive(message));
         exceptionJson.add("stacktrace", gson.toJsonTree(exception.getStackTrace()));
 
 

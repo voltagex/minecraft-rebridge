@@ -38,23 +38,22 @@ public class PositionResponseSerializer implements JsonSerializer<PositionRespon
     @Override
     public PositionResponse deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context) throws JsonParseException
     {
-        JsonObject wrapper = json.getAsJsonObject().get("position").getAsJsonObject();
-        Float x = wrapper.has("x") ? safeGetJsonAsFloat(wrapper.get("x")) : null;
-        Float y = wrapper.has("y") ? safeGetJsonAsFloat(wrapper.get("y")) : null;
-        Float z = wrapper.has("z") ? safeGetJsonAsFloat(wrapper.get("z")) : null;
+        JsonObject wrapper = json.getAsJsonObject();
+        if (!wrapper.has("position"))
+        {
+            throw new JsonParseException("Couldn't find 'position' element in JSON");
+        }
+
+        wrapper = wrapper.get("position").getAsJsonObject();
+
+        Float x = wrapper.has("x") ? wrapper.get("x").getAsFloat() : null;
+        Float y = wrapper.has("y") ? wrapper.get("y").getAsFloat() : null;
+        Float z = wrapper.has("z") ? wrapper.get("z").getAsFloat() : null;
+
         return new PositionResponse(x,y,z);
     }
 
-    private Float safeGetJsonAsFloat(JsonElement element)
-    {
-        //todo: this method probably isn't needed
-        if (element.equals(null))
-        {
-            return null;
-        }
 
-        return element.getAsFloat();
-    }
 
 
 }
