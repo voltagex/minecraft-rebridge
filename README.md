@@ -15,7 +15,6 @@
 
 #To do
 ## Investigate Java 8
-* Apparently Forge can be patched to work with Java 8
 * This would allow nice things like https://vert-x3.github.io/
 
 ## Investigate Vert.X
@@ -31,11 +30,11 @@ GET /api/world/{world}/{attribute}
 POST /api/player/{player}/{attribute}
 ```
 
-## Abstract the server away from Minecraft
-* Work out how to run *just the server* in IntelliJ
-* Move all the minecraft-related stuff to something like an IMinecraftProvider
-* Implement a mock IMinecraftProvider
-
-
 ## Support more than one player on the server
-* Requires lots of changes
+* Change routing to be more like
+
+```
+GET /api/player/{playername}/{attribute}
+```
+
+* Implement SMPPlayerProvider or similar
