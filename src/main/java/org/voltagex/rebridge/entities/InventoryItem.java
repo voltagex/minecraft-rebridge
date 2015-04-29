@@ -1,5 +1,7 @@
 package org.voltagex.rebridge.entities;
 
+import java.util.ArrayList;
+
 public class InventoryItem
 {
     private int id;
@@ -36,3 +38,4 @@ public class InventoryItem
         this.name = name;
     }
 }
+

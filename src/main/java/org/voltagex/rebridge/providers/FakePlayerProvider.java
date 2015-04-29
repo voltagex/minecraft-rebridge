@@ -1,10 +1,7 @@
 package org.voltagex.rebridge.providers;
 
-import org.voltagex.rebridge.entities.InventoryItem;
-import org.voltagex.rebridge.entities.ListResponse;
+import org.voltagex.rebridge.entities.Inventory;
 import org.voltagex.rebridge.entities.Position;
-
-import java.util.List;
 
 public class FakePlayerProvider implements IPlayerProvider
 {
@@ -28,7 +25,7 @@ public class FakePlayerProvider implements IPlayerProvider
         return;
     }
 
-    public ListResponse getInventory()
+    public Inventory getInventory()
     {
         return null;
     }

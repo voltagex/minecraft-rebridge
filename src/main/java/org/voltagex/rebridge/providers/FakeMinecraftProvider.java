@@ -10,7 +10,7 @@ public class FakeMinecraftProvider implements IMinecraftProvider
     }
     public IPlayerProvider player()
     {
-        return player();
+        return this.player;
     }
 
     public String getProviderName()

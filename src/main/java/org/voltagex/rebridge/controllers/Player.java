@@ -1,14 +1,9 @@
 package org.voltagex.rebridge.controllers;
 
 import fi.iki.elonen.NanoHTTPD;
-import net.minecraft.client.Minecraft;
-import net.minecraft.util.BlockPos;
 import org.voltagex.rebridge.annotations.Controller;
 import org.voltagex.rebridge.entities.*;
 import org.voltagex.rebridge.providers.IMinecraftProvider;
-
-import java.util.ArrayList;
-import java.util.List;
 
 @Controller
 public class Player
@@ -78,7 +73,7 @@ public class Player
 
     public ServiceResponse getInventory()
     {
-        ListResponse response = provider.player().getInventory();
+        Inventory response = provider.player().getInventory();
         if (response == null)
         {
             return NoPlayerResponse();

@@ -1,14 +1,12 @@
 package org.voltagex.rebridge.providers;
 
 import net.minecraft.client.Minecraft;
-import net.minecraft.inventory.InventoryHelper;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.BlockPos;
 import net.minecraft.util.RegistryNamespaced;
-import net.minecraftforge.fml.common.registry.GameRegistry;
+import org.voltagex.rebridge.entities.Inventory;
 import org.voltagex.rebridge.entities.InventoryItem;
-import org.voltagex.rebridge.entities.ListResponse;
 import org.voltagex.rebridge.entities.Position;
 
 import java.util.ArrayList;
@@ -71,9 +69,9 @@ public class SinglePlayerProvider implements IPlayerProvider
         return minecraft.thePlayer.getName();
     }
 
-    public ListResponse getInventory()
+    public Inventory getInventory()
     {
-        List<InventoryItem> list = new ArrayList<InventoryItem>();
+        ArrayList<InventoryItem> list = new ArrayList<InventoryItem>();
 
         if (minecraft.thePlayer == null)
         {
@@ -100,7 +98,7 @@ public class SinglePlayerProvider implements IPlayerProvider
             list.add(newItem);
         }
 
-        return new ListResponse(list);
+        return new Inventory(list);
     }
 
 

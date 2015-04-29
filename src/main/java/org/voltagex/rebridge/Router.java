@@ -12,12 +12,12 @@ import org.reflections.scanners.*;
 import org.reflections.util.ClasspathHelper;
 import org.reflections.util.ConfigurationBuilder;
 import org.voltagex.rebridge.annotations.Controller;
-import org.voltagex.rebridge.entities.ListResponse;
+import org.voltagex.rebridge.entities.Inventory;
 import org.voltagex.rebridge.entities.Position;
 import org.voltagex.rebridge.entities.ServiceResponse;
 import org.voltagex.rebridge.entities.Simple;
 import org.voltagex.rebridge.providers.IMinecraftProvider;
-import org.voltagex.rebridge.serializers.ListResponseSerializer;
+import org.voltagex.rebridge.serializers.InventorySerializer;
 import org.voltagex.rebridge.serializers.PositionResponseSerializer;
 import org.voltagex.rebridge.serializers.SimpleResponseSerializer;
 
@@ -43,9 +43,9 @@ public class Router
     public Router(IMinecraftProvider provider)
     {
         this.provider = provider;
+        gsonBuilder.registerTypeAdapter(Inventory.class, new InventorySerializer());
         gsonBuilder.registerTypeAdapter(Simple.class, new SimpleResponseSerializer());
         gsonBuilder.registerTypeAdapter(Position.class, new PositionResponseSerializer());
-        gsonBuilder.registerTypeAdapter(ListResponse.class, new ListResponseSerializer());
         gson = gsonBuilder.create();
 
         HashSet<Class<?>> types;
