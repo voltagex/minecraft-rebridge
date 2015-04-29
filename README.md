@@ -6,8 +6,6 @@
 * In a shell/cmd/Powershell, run `gradlew.bat setupDecompWorkspace --refresh-dependencies`
 * Open IntelliJ IDEA and import from existing sources
 * Select Gradle and import
-* Exit IntelliJ
-* Run `gradlew.bat gIR`
 
 ##Notes
 * NanoHTTPD included as source until https://github.com/NanoHttpd/nanohttpd/issues/169 is resolved
