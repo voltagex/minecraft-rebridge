@@ -1,5 +1,7 @@
 package org.voltagex.rebridge.providers;
 
+import com.google.gson.GsonBuilder;
+
 public class FakeMinecraftProvider implements IMinecraftProvider
 {
     public static FakePlayerProvider player;
@@ -16,5 +18,11 @@ public class FakeMinecraftProvider implements IMinecraftProvider
     public String getProviderName()
     {
         return "Fake Minecraft Provider";
+    }
+
+    @Override
+    public GsonBuilder registerExtraTypeAdapters(GsonBuilder builder)
+    {
+        return builder;
     }
 }

@@ -12,6 +12,7 @@ import org.reflections.scanners.*;
 import org.reflections.util.ClasspathHelper;
 import org.reflections.util.ConfigurationBuilder;
 import org.voltagex.rebridge.annotations.Controller;
+import org.voltagex.rebridge.annotations.Parameters;
 import org.voltagex.rebridge.entities.Inventory;
 import org.voltagex.rebridge.entities.Position;
 import org.voltagex.rebridge.entities.ServiceResponse;
@@ -21,6 +22,7 @@ import org.voltagex.rebridge.serializers.InventorySerializer;
 import org.voltagex.rebridge.serializers.PositionResponseSerializer;
 import org.voltagex.rebridge.serializers.SimpleResponseSerializer;
 
+import java.lang.annotation.Annotation;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
 import java.lang.reflect.Type;
@@ -45,7 +47,8 @@ public class Router
         this.provider = provider;
         gsonBuilder.registerTypeAdapter(Inventory.class, new InventorySerializer());
         gsonBuilder.registerTypeAdapter(Simple.class, new SimpleResponseSerializer());
-        gsonBuilder.registerTypeAdapter(Position.class, new PositionResponseSerializer());
+        gsonBuilder.registerTypeAdapter(Position.class, new PositionResponseSerializer());;
+        gsonBuilder = provider.registerExtraTypeAdapters(gsonBuilder);
         gson = gsonBuilder.create();
 
         HashSet<Class<?>> types;
@@ -148,13 +151,38 @@ public class Router
             String postBody = session.parsePost();
 
             Class<?> selectedController = findControllerForRequest(controller);
+
+            if (selectedController == null)
+            {
+                //todo: string.Format
+                return processBadRequest(session, "Action " + action + " on " + controller + " not found"); //todo: return 404
+            }
+
             Method selectedMethod = findMethodForRequest("post", selectedController, action);
             Type type = findTypeForRequest(selectedMethod);
 
-            ServiceResponse requestObject = gson.fromJson(postBody, type);
-
+            Object request = gson.fromJson(postBody, type);
+            Object retVal;
             Constructor<?> controllerConstructor = selectedController.getConstructor(IMinecraftProvider.class);
-            Object retVal = selectedMethod.invoke(controllerConstructor.newInstance(provider),requestObject);
+
+            Parameters annotationParameters = selectedMethod.getAnnotation(Parameters.class);
+            String parameters[] = annotationParameters.Names();
+            String[] callingParameters = null;
+            if (parameters.length == segments.length - 3)
+            {
+                callingParameters = new String[segments.length-3];
+                for (int i=3; i<segments.length; i++)
+                {
+                    callingParameters[i-3] = segments[i];
+                }
+                retVal = selectedMethod.invoke(controllerConstructor.newInstance(provider),callingParameters);
+            }
+
+            retVal = selectedMethod.invoke(controllerConstructor.newInstance(provider));
+
+
+
+
 
             return new NanoHTTPD.Response(NanoHTTPD.Response.Status.ACCEPTED, MIMEType, type.toString());
         }
@@ -164,7 +192,6 @@ public class Router
             return processBadRequest(session,e);
         }
     }
-
 
     private Class<?> findControllerForRequest(final String controller)
     {
@@ -208,7 +235,6 @@ public class Router
         String message = exception.getMessage() == null ? "" : exception.getMessage();
         exceptionJson.add("message",new JsonPrimitive(exception.toString() + ": " + message));
         exceptionJson.add("stacktrace", gson.toJsonTree(exception.getStackTrace()));
-
 
         return new NanoHTTPD.Response
                 (NanoHTTPD.Response.Status.BAD_REQUEST,
