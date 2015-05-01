@@ -117,7 +117,19 @@ public class Router
         try
         {
             Constructor<?> controllerConstructor = selectedController.getConstructor(IMinecraftProvider.class);
-            Object retVal = selectedMethod.invoke(controllerConstructor.newInstance(provider));
+            Object retVal;
+
+            String[] callingParameters = getParametersForMethod(selectedMethod, segments);
+            if (callingParameters.length > 0)
+            {
+                retVal = selectedMethod.invoke(controllerConstructor.newInstance(provider), callingParameters);
+            }
+
+            else
+            {
+                retVal = selectedMethod.invoke(controllerConstructor.newInstance(provider));
+            }
+
             String json = gson.toJson(retVal);
 
             return new NanoHTTPD.Response(((ServiceResponse) retVal).getStatus(), MIMEType, json);
@@ -144,7 +156,7 @@ public class Router
 
             if (length == 0)
             {
-               return processBadRequest(session,"Request body can't be empty");
+                return processBadRequest(session, "Request body can't be empty");
             }
 
             //https://github.com/NanoHttpd/nanohttpd/issues/99
@@ -163,35 +175,29 @@ public class Router
 
             Object request = gson.fromJson(postBody, type);
             Object retVal;
+
             Constructor<?> controllerConstructor = selectedController.getConstructor(IMinecraftProvider.class);
 
-            Parameters annotationParameters = selectedMethod.getAnnotation(Parameters.class);
-            String parameters[] = annotationParameters.Names();
-            String[] callingParameters = null;
-            if (parameters.length == segments.length - 3)
+            String[] callingParameters = getParametersForMethod(selectedMethod, segments);
+            if (callingParameters.length > 0)
             {
-                callingParameters = new String[segments.length-3];
-                for (int i=3; i<segments.length; i++)
-                {
-                    callingParameters[i-3] = segments[i];
-                }
-                retVal = selectedMethod.invoke(controllerConstructor.newInstance(provider),callingParameters);
+                retVal = selectedMethod.invoke(controllerConstructor.newInstance(provider), callingParameters);
             }
 
-            retVal = selectedMethod.invoke(controllerConstructor.newInstance(provider));
-
-
-
-
-
-            return new NanoHTTPD.Response(NanoHTTPD.Response.Status.ACCEPTED, MIMEType, type.toString());
+            else
+            {
+                retVal = selectedMethod.invoke(controllerConstructor.newInstance(provider));
+            }
         }
 
-        catch (Exception e)
-        {
-            return processBadRequest(session,e);
+
+                catch (Exception e)
+                {
+                    return processBadRequest(session,e);
+                }
+
+            return new NanoHTTPD.Response(NanoHTTPD.Response.Status.ACCEPTED, MIMEType,"");
         }
-    }
 
     private Class<?> findControllerForRequest(final String controller)
     {
@@ -221,6 +227,35 @@ public class Router
     {
        return selectedMethod.getParameterTypes()[0];
     }
+
+
+    private String[] getParametersForMethod(Method selectedMethod, String[] urlSegments)
+    {
+        //this kinda sucks
+        Parameters annotationParameters = selectedMethod.getAnnotation(Parameters.class);
+
+        if (annotationParameters == null)
+        {
+            return new String[0];
+        }
+
+        String parameters[] = annotationParameters.Names();
+        String[] callingParameters = new String[0];
+
+
+        //split them off so they can be used as method arguments
+        if (parameters.length == urlSegments.length - 3)
+        {
+            callingParameters = new String[urlSegments.length - 3];
+            for (int i = 3; i < urlSegments.length; i++)
+            {
+                callingParameters[i - 3] = urlSegments[i];
+            }
+        }
+
+        return callingParameters;
+    }
+
 
     //todo: clean up bad request processing
     private NanoHTTPD.Response processBadRequest(NanoHTTPD.IHTTPSession session)
