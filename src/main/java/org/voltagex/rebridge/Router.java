@@ -25,6 +25,7 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Type;
+import java.util.HashMap;
 import java.util.HashSet;
 
 public class Router
@@ -33,7 +34,7 @@ public class Router
     private static Gson gson;
     private final static String MIMEType = "application/json";
     private static HashSet<Class<?>> avaliableControllers = new HashSet<Class<?>>();
-    private static HashSet<Class<?>> registeredControllers = new HashSet<Class<?>>();
+    private static HashMap<String,Class<?>> registeredControllers = new HashMap<String, Class<?>>();
     private static IMinecraftProvider provider;
 
     private Router()
@@ -42,10 +43,10 @@ public class Router
     }
 
 
-    public static void AddRoute(String modid, Class<?> controllerClass)
+    public static void AddRoute(String namespace, Class<?> controllerClass)
     {
-        System.out.println("Called addRoute from " + modid);
-        registeredControllers.add(controllerClass);
+        System.out.println("Called addRoute from " + namespace);
+        registeredControllers.put(namespace, controllerClass);
     }
 
     public Router(IMinecraftProvider provider)
@@ -74,7 +75,6 @@ public class Router
 
     public NanoHTTPD.Response route(NanoHTTPD.IHTTPSession session)
     {
-
         String method = session.getMethod().name();
         if (method.equals("GET"))
         {
@@ -92,6 +92,7 @@ public class Router
 
     private NanoHTTPD.Response processGet(NanoHTTPD.IHTTPSession session, IMinecraftProvider provider)
     {
+        Boolean needsMinecraftProvider = true;
         //todo: handle parameters
         //todo: handle routes from mods
         /*
@@ -100,7 +101,22 @@ public class Router
         */
         String uri = session.getUri();
         String[] segments = uri.split("/");
+
         final String controller = segments[1];
+        Class<?> selectedController;
+
+        //todo: move to Guava MultiMap to allow multiple controllers from the same namespace
+        if (registeredControllers.containsKey(controller))
+        {
+            selectedController = registeredControllers.get(controller);
+            needsMinecraftProvider = false;
+        }
+
+        else
+        {
+            selectedController = findControllerForRequest(controller);
+        }
+
         String action = segments[2];
 
         if (controller.isEmpty())
@@ -109,7 +125,7 @@ public class Router
         }
 
         //todo: decide whether some kind of "Action" type consisting of the Controller and the Method would be better here
-        Class<?> selectedController = findControllerForRequest(controller);
+
         if (selectedController == null)
         {
             //todo: string.Format
@@ -120,7 +136,7 @@ public class Router
 
         try
         {
-            Constructor<?> controllerConstructor = selectedController.getConstructor(IMinecraftProvider.class);
+            Constructor<?> controllerConstructor = needsMinecraftProvider ? selectedController.getConstructor(IMinecraftProvider.class) : selectedController.getConstructor();
             Object retVal;
 
             String[] callingParameters = getParametersForMethod(selectedMethod, segments);
@@ -150,6 +166,7 @@ public class Router
             return processBadRequest(session, e);
         }
     }
+
 
     private NanoHTTPD.Response processPost(NanoHTTPD.IHTTPSession session, IMinecraftProvider provider)
     {
@@ -197,8 +214,6 @@ public class Router
                 selectedMethod.invoke(controllerConstructor.newInstance(provider));
             }
         }
-
-
                 catch (Exception e)
                 {
                     return processBadRequest(session,e);

@@ -13,7 +13,7 @@ public class ExtendedRouteMod
     }
 
 
-    public String Test()
+    public String getTest()
     {
         return "Hello World";
     }
