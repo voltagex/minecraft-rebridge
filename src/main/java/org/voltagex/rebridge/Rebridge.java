@@ -28,7 +28,6 @@ public class Rebridge extends NanoHTTPD
         super(9999);
     }
 
-
     @EventHandler
     public void init(FMLInitializationEvent event)
     {

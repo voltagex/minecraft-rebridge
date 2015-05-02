@@ -31,14 +31,21 @@ public class Router
 {
     private static GsonBuilder gsonBuilder = new GsonBuilder();
     private static Gson gson;
-
     private final static String MIMEType = "application/json";
     private static HashSet<Class<?>> avaliableControllers = new HashSet<Class<?>>();
+    private static HashSet<Class<?>> registeredControllers = new HashSet<Class<?>>();
     private static IMinecraftProvider provider;
 
     private Router()
     {
 
+    }
+
+
+    public static void AddRoute(String modid, Class<?> controllerClass)
+    {
+        System.out.println("Called addRoute from " + modid);
+        registeredControllers.add(controllerClass);
     }
 
     public Router(IMinecraftProvider provider)
@@ -49,7 +56,6 @@ public class Router
         gsonBuilder = provider.registerExtraTypeAdapters(gsonBuilder);
         gson = gsonBuilder.create();
 
-        HashSet<Class<?>> types;
         Reflections reflections;
 
         //todo: do this once per run, not per call
@@ -87,15 +93,15 @@ public class Router
     private NanoHTTPD.Response processGet(NanoHTTPD.IHTTPSession session, IMinecraftProvider provider)
     {
         //todo: handle parameters
-
+        //todo: handle routes from mods
+        /*
+        Class<?> testClass = this.registeredControllers.iterator().next()
+        testClass.getMethods()[0].invoke(testClass.newInstance());
+        */
         String uri = session.getUri();
         String[] segments = uri.split("/");
         final String controller = segments[1];
         String action = segments[2];
-        /*if (segments == null) //todo: redirect/bad request or something on request for "/"
-        {
-            return processBadRequest(session);
-        }*/
 
         if (controller.isEmpty())
         {
@@ -254,7 +260,6 @@ public class Router
 
         return callingParameters;
     }
-
 
     //todo: clean up bad request processing
     private NanoHTTPD.Response processBadRequest(NanoHTTPD.IHTTPSession session)
