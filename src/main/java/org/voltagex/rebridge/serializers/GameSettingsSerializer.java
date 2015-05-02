@@ -11,12 +11,20 @@ public class GameSettingsSerializer implements JsonSerializer<GameSettings>
    @Override
     public JsonElement serialize(GameSettings src, Type typeOfSrc, JsonSerializationContext context)
     {
-        Field[] fields =  src.getClass().getDeclaredFields();
+        Field[] fields = src.getClass().getFields();
         JsonObject parent = new JsonObject();
 
         for (Field field : fields)
         {
-            parent.add(field.getName(),new JsonPrimitive(field.getType().getName()));
+            JsonObject valueAndType = new JsonObject();
+            try
+            {
+                valueAndType.add(field.get(src).toString(), new JsonPrimitive(field.getType().getName()));
+                parent.add(field.getName(), valueAndType);
+            }
+            catch (IllegalAccessException ignored)
+            {
+            }
         }
 
         return parent;

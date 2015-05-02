@@ -13,20 +13,19 @@ import org.reflections.util.ClasspathHelper;
 import org.reflections.util.ConfigurationBuilder;
 import org.voltagex.rebridge.annotations.Controller;
 import org.voltagex.rebridge.annotations.Parameters;
-import org.voltagex.rebridge.annotations.ResponseMIMEType;
-import org.voltagex.rebridge.entities.*;
+import org.voltagex.rebridge.entities.Position;
+import org.voltagex.rebridge.entities.ServiceResponse;
+import org.voltagex.rebridge.entities.Simple;
+import org.voltagex.rebridge.entities.StreamResponse;
 import org.voltagex.rebridge.providers.IMinecraftProvider;
 import org.voltagex.rebridge.serializers.PositionResponseSerializer;
 import org.voltagex.rebridge.serializers.SimpleResponseSerializer;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.ObjectOutputStream;
 import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Type;
 import java.util.HashSet;
-import java.util.stream.Stream;
 
 public class Router
 {
@@ -44,9 +43,9 @@ public class Router
 
     public Router(IMinecraftProvider provider)
     {
-        this.provider = provider;
+        Router.provider = provider;
         gsonBuilder.registerTypeAdapter(Simple.class, new SimpleResponseSerializer());
-        gsonBuilder.registerTypeAdapter(Position.class, new PositionResponseSerializer());;
+        gsonBuilder.registerTypeAdapter(Position.class, new PositionResponseSerializer());
         gsonBuilder = provider.registerExtraTypeAdapters(gsonBuilder);
         gson = gsonBuilder.create();
 
@@ -93,10 +92,10 @@ public class Router
         String[] segments = uri.split("/");
         final String controller = segments[1];
         String action = segments[2];
-        if (segments == null) //todo: redirect/bad request or something on request for "/"
+        /*if (segments == null) //todo: redirect/bad request or something on request for "/"
         {
             return processBadRequest(session);
-        }
+        }*/
 
         if (controller.isEmpty())
         {
@@ -130,22 +129,11 @@ public class Router
             }
 
 
-            String responseMIMEType = getResponseMIMETypeFromAnnotation(selectedMethod);
-            NanoHTTPD.Response.IStatus responseCode = ((ServiceResponse)retVal).getStatus();
-
-            if (responseMIMEType != null)
+            if (retVal instanceof StreamResponse)
             {
-                /*ObjectResponse objectResponse =  ((ObjectResponse) retVal);
-
-                ByteArrayOutputStream baos = new ByteArrayOutputStream();
-                ObjectOutputStream oos = new ObjectOutputStream(baos);
-                oos.writeObject(objectResponse.getReturnedObject());*/
-
-                return new NanoHTTPD.Response(responseCode,responseMIMEType,((StreamResponse)retVal).getInputStream());
-
+                StreamResponse streamResponse = (StreamResponse) retVal;
+                return new NanoHTTPD.Response(streamResponse.getStatus(), streamResponse.getMimeType(), ((StreamResponse) retVal).getInputStream());
             }
-
-
 
             String json = gson.toJson(retVal);
             return new NanoHTTPD.Response(((ServiceResponse) retVal).getStatus(), MIMEType, json);
@@ -155,18 +143,6 @@ public class Router
         {
             return processBadRequest(session, e);
         }
-    }
-
-    private String getResponseMIMETypeFromAnnotation(Method selectedMethod)
-    {
-        ResponseMIMEType MIMETypeAnnotation = selectedMethod.getAnnotation(ResponseMIMEType.class);
-
-        if (MIMETypeAnnotation == null)
-        {
-            return null;
-        }
-
-        return MIMETypeAnnotation.type();
     }
 
     private NanoHTTPD.Response processPost(NanoHTTPD.IHTTPSession session, IMinecraftProvider provider)
@@ -181,14 +157,7 @@ public class Router
         {
             String contentLength = session.getHeaders().get("content-length");
             int length = Integer.parseInt(contentLength);
-
-            if (length == 0)
-            {
-                return processBadRequest(session, "Request body can't be empty");
-            }
-
-            //https://github.com/NanoHttpd/nanohttpd/issues/99
-            String postBody = session.parsePost();
+            String postBody;
 
             Class<?> selectedController = findControllerForRequest(controller);
 
@@ -201,20 +170,25 @@ public class Router
             Method selectedMethod = findMethodForRequest("post", selectedController, action);
             Type type = findTypeForRequest(selectedMethod);
 
-            Object request = gson.fromJson(postBody, type);
-            Object retVal;
+            Object request;
+            if (length > 0)
+            {
+                //https://github.com/NanoHttpd/nanohttpd/issues/99
+                postBody = session.parsePost();
+                request = gson.fromJson(postBody, type);
+            }
 
             Constructor<?> controllerConstructor = selectedController.getConstructor(IMinecraftProvider.class);
 
             String[] callingParameters = getParametersForMethod(selectedMethod, segments);
             if (callingParameters.length > 0)
             {
-                retVal = selectedMethod.invoke(controllerConstructor.newInstance(provider), callingParameters);
+                selectedMethod.invoke(controllerConstructor.newInstance(provider), callingParameters);
             }
 
             else
             {
-                retVal = selectedMethod.invoke(controllerConstructor.newInstance(provider));
+                selectedMethod.invoke(controllerConstructor.newInstance(provider));
             }
         }
 
@@ -275,10 +249,7 @@ public class Router
         if (parameters.length == urlSegments.length - 3)
         {
             callingParameters = new String[urlSegments.length - 3];
-            for (int i = 3; i < urlSegments.length; i++)
-            {
-                callingParameters[i - 3] = urlSegments[i];
-            }
+            System.arraycopy(urlSegments, 3, callingParameters, 0, urlSegments.length - 3);
         }
 
         return callingParameters;
@@ -291,11 +262,17 @@ public class Router
        return processBadRequest(session, "Bad request for " + session.getUri());
     }
 
-    private NanoHTTPD.Response processBadRequest(NanoHTTPD.IHTTPSession session, Exception exception)
+    private NanoHTTPD.Response processBadRequest(NanoHTTPD.IHTTPSession session, Throwable exception)
     {
         JsonObject exceptionJson = new JsonObject();
 
+        if (exception instanceof InvocationTargetException)
+        {
+            exception = ((InvocationTargetException) exception).getTargetException();
+        }
         String message = exception.getMessage() == null ? "" : exception.getMessage();
+
+
         exceptionJson.add("message",new JsonPrimitive(exception.toString() + ": " + message));
         exceptionJson.add("stacktrace", gson.toJsonTree(exception.getStackTrace()));
 
