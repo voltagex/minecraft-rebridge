@@ -1,5 +1,8 @@
 package org.voltagex.rebridge.entities;
 
+import com.google.gson.Gson;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonPrimitive;
 import fi.iki.elonen.NanoHTTPD;
 
 public abstract class ServiceResponse
@@ -23,4 +26,5 @@ public abstract class ServiceResponse
     {
         this.status = value;
     }
+
 }

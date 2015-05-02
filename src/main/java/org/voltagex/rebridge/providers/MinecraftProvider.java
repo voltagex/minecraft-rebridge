@@ -21,7 +21,7 @@ public class MinecraftProvider implements IMinecraftProvider
     @Override
     public GsonBuilder registerExtraTypeAdapters(GsonBuilder builder)
     {
-        builder.registerTypeAdapter(Field[].class,new GameSettingsSerializer());
+        builder.registerTypeAdapter(GameSettings.class,new GameSettingsSerializer());
         return builder;
     }
 }

@@ -13,20 +13,20 @@ import org.reflections.util.ClasspathHelper;
 import org.reflections.util.ConfigurationBuilder;
 import org.voltagex.rebridge.annotations.Controller;
 import org.voltagex.rebridge.annotations.Parameters;
-import org.voltagex.rebridge.entities.Inventory;
-import org.voltagex.rebridge.entities.Position;
-import org.voltagex.rebridge.entities.ServiceResponse;
-import org.voltagex.rebridge.entities.Simple;
+import org.voltagex.rebridge.annotations.ResponseMIMEType;
+import org.voltagex.rebridge.entities.*;
 import org.voltagex.rebridge.providers.IMinecraftProvider;
-import org.voltagex.rebridge.serializers.InventorySerializer;
 import org.voltagex.rebridge.serializers.PositionResponseSerializer;
 import org.voltagex.rebridge.serializers.SimpleResponseSerializer;
 
-import java.lang.annotation.Annotation;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.ObjectOutputStream;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
 import java.lang.reflect.Type;
 import java.util.HashSet;
+import java.util.stream.Stream;
 
 public class Router
 {
@@ -45,7 +45,6 @@ public class Router
     public Router(IMinecraftProvider provider)
     {
         this.provider = provider;
-        gsonBuilder.registerTypeAdapter(Inventory.class, new InventorySerializer());
         gsonBuilder.registerTypeAdapter(Simple.class, new SimpleResponseSerializer());
         gsonBuilder.registerTypeAdapter(Position.class, new PositionResponseSerializer());;
         gsonBuilder = provider.registerExtraTypeAdapters(gsonBuilder);
@@ -130,8 +129,25 @@ public class Router
                 retVal = selectedMethod.invoke(controllerConstructor.newInstance(provider));
             }
 
-            String json = gson.toJson(retVal);
 
+            String responseMIMEType = getResponseMIMETypeFromAnnotation(selectedMethod);
+            NanoHTTPD.Response.IStatus responseCode = ((ServiceResponse)retVal).getStatus();
+
+            if (responseMIMEType != null)
+            {
+                /*ObjectResponse objectResponse =  ((ObjectResponse) retVal);
+
+                ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                ObjectOutputStream oos = new ObjectOutputStream(baos);
+                oos.writeObject(objectResponse.getReturnedObject());*/
+
+                return new NanoHTTPD.Response(responseCode,responseMIMEType,((StreamResponse)retVal).getInputStream());
+
+            }
+
+
+
+            String json = gson.toJson(retVal);
             return new NanoHTTPD.Response(((ServiceResponse) retVal).getStatus(), MIMEType, json);
         }
 
@@ -139,6 +155,18 @@ public class Router
         {
             return processBadRequest(session, e);
         }
+    }
+
+    private String getResponseMIMETypeFromAnnotation(Method selectedMethod)
+    {
+        ResponseMIMEType MIMETypeAnnotation = selectedMethod.getAnnotation(ResponseMIMEType.class);
+
+        if (MIMETypeAnnotation == null)
+        {
+            return null;
+        }
+
+        return MIMETypeAnnotation.type();
     }
 
     private NanoHTTPD.Response processPost(NanoHTTPD.IHTTPSession session, IMinecraftProvider provider)

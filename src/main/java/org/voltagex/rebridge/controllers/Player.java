@@ -73,8 +73,8 @@ public class Player
 
     public ServiceResponse getInventory()
     {
-        Inventory response = provider.player().getInventory();
-        if (response == null)
+        ObjectResponse response = new ObjectResponse(provider.player().getInventory());
+        if (response.getReturnedObject() == null)
         {
             return NoPlayerResponse();
         }

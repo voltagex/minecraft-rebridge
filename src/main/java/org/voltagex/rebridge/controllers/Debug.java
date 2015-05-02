@@ -18,9 +18,16 @@ import net.minecraftforge.fml.common.registry.GameRegistry;
 import org.lwjgl.opengl.GLContext;
 import org.voltagex.rebridge.annotations.Controller;
 import org.voltagex.rebridge.annotations.Parameters;
+import org.voltagex.rebridge.annotations.ResponseMIMEType;
 import org.voltagex.rebridge.entities.DebugResponse;
+import org.voltagex.rebridge.entities.GameSettingsResponse;
+import org.voltagex.rebridge.entities.ServiceResponse;
+import org.voltagex.rebridge.entities.StreamResponse;
 import org.voltagex.rebridge.providers.IMinecraftProvider;
 
+import java.awt.image.BufferedImage;
+import java.io.IOException;
+import java.io.InputStream;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
@@ -72,10 +79,9 @@ public class Debug
         }
     }
 
-    public DebugResponse getGameSettings()
+    public GameSettingsResponse getGameSettings()
     {
-        Class<?> settingsClass = minecraft.gameSettings.getClass();
-        return new DebugResponse((Field[])(settingsClass.getDeclaredFields()));
+        return new GameSettingsResponse(minecraft.gameSettings);
     }
 
 
@@ -126,6 +132,28 @@ public class Debug
         catch (Exception e)
         {
             return new DebugResponse(false);
+        }
+    }
+
+    @ResponseMIMEType(type="image/png")
+    public ServiceResponse getItemIcon() throws IOException
+    {
+
+        ArrayList<ItemStack> subItems = new ArrayList<ItemStack>();
+        Item item70 = Item.getItemById(70);
+        item70.getSubItems(item70, null, subItems);
+
+        String iconName = Minecraft.getMinecraft().getRenderItem().getItemModelMesher().getItemModel(subItems.get(0)).getTexture().getIconName();
+        try
+        {
+            String filePath = "textures/" + iconName.split("minecraft:")[1] + ".png";
+            InputStream stream = Minecraft.getMinecraft().getResourceManager().getResource(new ResourceLocation(filePath)).getInputStream();
+            return new StreamResponse(stream);
+        }
+
+        catch (IOException ex)
+        {
+            throw ex;
         }
     }
 }

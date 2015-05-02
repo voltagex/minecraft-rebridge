@@ -5,12 +5,11 @@ import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.BlockPos;
 import net.minecraft.util.RegistryNamespaced;
-import org.voltagex.rebridge.entities.Inventory;
 import org.voltagex.rebridge.entities.InventoryItem;
+import org.voltagex.rebridge.entities.ObjectResponse;
 import org.voltagex.rebridge.entities.Position;
 
 import java.util.ArrayList;
-import java.util.List;
 
 public class SinglePlayerProvider implements IPlayerProvider
 {
@@ -69,7 +68,7 @@ public class SinglePlayerProvider implements IPlayerProvider
         return minecraft.thePlayer.getName();
     }
 
-    public Inventory getInventory()
+    public ObjectResponse getInventory()
     {
         ArrayList<InventoryItem> list = new ArrayList<InventoryItem>();
 
@@ -98,7 +97,7 @@ public class SinglePlayerProvider implements IPlayerProvider
             list.add(newItem);
         }
 
-        return new Inventory(list);
+        return new ObjectResponse(list);
     }
 
 

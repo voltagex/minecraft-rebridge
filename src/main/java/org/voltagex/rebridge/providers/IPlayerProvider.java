@@ -1,6 +1,7 @@
 package org.voltagex.rebridge.providers;
 
 import org.voltagex.rebridge.entities.Inventory;
+import org.voltagex.rebridge.entities.ObjectResponse;
 import org.voltagex.rebridge.entities.Position;
 
 public interface IPlayerProvider
@@ -11,5 +12,5 @@ public interface IPlayerProvider
     Position getPosition();
     void setPosition(Position position);
 
-    Inventory getInventory();
+    ObjectResponse getInventory();
 }
