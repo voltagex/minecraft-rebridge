@@ -1,9 +1,4 @@
-package org.voltagex.rebridge.entities;
-
-import com.google.gson.Gson;
-import fi.iki.elonen.NanoHTTPD;
-
-import java.util.Objects;
+package org.voltagex.rebridgeapi.entities;
 
 public class Simple extends ServiceResponse
 {

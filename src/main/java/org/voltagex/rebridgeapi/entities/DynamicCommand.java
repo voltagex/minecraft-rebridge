@@ -1,9 +1,8 @@
-package org.voltagex.rebridge.entities;
+package org.voltagex.rebridgeapi.entities;
 
 import net.minecraft.command.CommandException;
 import net.minecraft.command.ICommand;
 import net.minecraft.command.ICommandSender;
-import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.util.BlockPos;
 import net.minecraft.util.ChatComponentText;
 import net.minecraft.util.IChatComponent;
@@ -11,15 +10,11 @@ import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.utils.URIBuilder;
-import org.apache.http.impl.client.DefaultHttpClient;
-import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.impl.client.HttpClients;
 
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.net.URI;
-import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -62,7 +57,7 @@ public class DynamicCommand implements ICommand
     public void execute(ICommandSender sender, String[] args) throws CommandException
     {
         IChatComponent message = new ChatComponentText("executed " + this.name);
-        ((EntityPlayer) sender).addChatMessage(message);
+        sender.addChatMessage(message);
 
         HttpClient client = HttpClients.createDefault();
         try

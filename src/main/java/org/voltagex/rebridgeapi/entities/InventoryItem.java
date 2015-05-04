@@ -1,6 +1,4 @@
-package org.voltagex.rebridge.entities;
-
-import java.util.ArrayList;
+package org.voltagex.rebridgeapi.entities;
 
 public class InventoryItem
 {

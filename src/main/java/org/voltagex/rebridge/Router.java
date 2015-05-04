@@ -11,22 +11,18 @@ import org.reflections.Reflections;
 import org.reflections.scanners.*;
 import org.reflections.util.ClasspathHelper;
 import org.reflections.util.ConfigurationBuilder;
-import org.voltagex.rebridge.annotations.Controller;
-import org.voltagex.rebridge.annotations.Parameters;
-import org.voltagex.rebridge.entities.Position;
-import org.voltagex.rebridge.entities.ServiceResponse;
-import org.voltagex.rebridge.entities.Simple;
-import org.voltagex.rebridge.entities.StreamResponse;
 import org.voltagex.rebridge.providers.IMinecraftProvider;
 import org.voltagex.rebridge.serializers.PositionResponseSerializer;
 import org.voltagex.rebridge.serializers.SimpleResponseSerializer;
+import org.voltagex.rebridgeapi.annotations.Controller;
+import org.voltagex.rebridgeapi.annotations.Parameters;
+import org.voltagex.rebridgeapi.entities.*;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Type;
-import java.util.HashMap;
-import java.util.HashSet;
+import java.util.*;
 
 public class Router
 {
@@ -75,81 +71,100 @@ public class Router
 
     public NanoHTTPD.Response route(NanoHTTPD.IHTTPSession session)
     {
-        String method = session.getMethod().name();
-        if (method.equals("GET"))
+        // /someMod/someAction/parameter/anotherParameter
+        // /Player/Position
+
+        boolean needsMinecraftProvider = true;
+        Action actionToBeRouted;
+        String httpMethod = session.getMethod().name();
+
+        String uri = session.getUri();
+        List<String> segments = new LinkedList<String>(Arrays.asList(uri.split("/")));
+        // 0: /
+        // 1: Player
+        // 2: Position
+
+
+        //todo: do we really need 3 parts of the path?
+        if (segments.size() < 3)
         {
-            return processGet(session,provider);
+            return processBadRequest(session);
         }
-        else if (method.equals("POST"))
+
+        segments.remove(0);
+        // 0: Player
+        // 1: Position
+
+        String action = segments.get(0);
+        segments.remove(0);
+
+        Class<?> selectedController;
+
+        //if the first parameter is actually a mod namespace
+        if (registeredControllers.containsKey(action))
         {
-            return processPost(session,provider);
+            selectedController = registeredControllers.get(action);
+            needsMinecraftProvider = false;
         }
+
+        else
+        {
+            selectedController = findControllerForRequest(action);
+            if (selectedController == null)
+            {
+                //todo: string.Format
+                return processBadRequest(session, "Action " + action + " not found"); //todo: return 404
+            }
+        }
+
+        try
+        {
+            Method selectedMethod = findMethodForRequest(httpMethod, selectedController, action);
+            Constructor<?> controllerConstructor = needsMinecraftProvider ? selectedController.getConstructor(IMinecraftProvider.class) : selectedController.getConstructor();
+            actionToBeRouted = new Action(controllerConstructor, selectedMethod, segments);
+        }
+
+        catch (NoSuchMethodException e)
+        {
+            return processBadRequest(session, e);
+        }
+
+        if (httpMethod.equals("GET"))
+        {
+            return processGet(session, provider, actionToBeRouted);
+        }
+
+        else if (httpMethod.equals("POST"))
+        {
+            return processPost(session, provider, actionToBeRouted);
+        }
+
         else
         {
             return processBadRequest(session);
         }
     }
 
-    private NanoHTTPD.Response processGet(NanoHTTPD.IHTTPSession session, IMinecraftProvider provider)
+    private NanoHTTPD.Response processGet(NanoHTTPD.IHTTPSession session, IMinecraftProvider provider, Action actionToBeRouted)
     {
-        Boolean needsMinecraftProvider = true;
         //todo: handle parameters
         //todo: handle routes from mods
-        /*
-        Class<?> testClass = this.registeredControllers.iterator().next()
-        testClass.getMethods()[0].invoke(testClass.newInstance());
-        */
-        String uri = session.getUri();
-        String[] segments = uri.split("/");
-
-        final String controller = segments[1];
-        Class<?> selectedController;
-
         //todo: move to Guava MultiMap to allow multiple controllers from the same namespace
-        if (registeredControllers.containsKey(controller))
-        {
-            selectedController = registeredControllers.get(controller);
-            needsMinecraftProvider = false;
-        }
-
-        else
-        {
-            selectedController = findControllerForRequest(controller);
-        }
-
-        String action = segments[2];
-
-        if (controller.isEmpty())
-        {
-            return processBadRequest(session);
-        }
-
-        //todo: decide whether some kind of "Action" type consisting of the Controller and the Method would be better here
-
-        if (selectedController == null)
-        {
-            //todo: string.Format
-            return processBadRequest(session, "Action " + action + " on " + controller + " not found"); //todo: return 404
-        }
-
-        Method selectedMethod = findMethodForRequest("get", selectedController, action);
 
         try
         {
-            Constructor<?> controllerConstructor = needsMinecraftProvider ? selectedController.getConstructor(IMinecraftProvider.class) : selectedController.getConstructor();
             Object retVal;
+            String[] callingParameters = getParametersForMethod(actionToBeRouted.getMethod(), actionToBeRouted.getParameters());
 
-            String[] callingParameters = getParametersForMethod(selectedMethod, segments);
             if (callingParameters.length > 0)
             {
-                retVal = selectedMethod.invoke(controllerConstructor.newInstance(provider), callingParameters);
+                retVal = actionToBeRouted.getMethod().invoke(actionToBeRouted.getController().newInstance(provider), callingParameters);
             }
 
             else
             {
-                retVal = selectedMethod.invoke(controllerConstructor.newInstance(provider));
+                retVal = actionToBeRouted.getMethod().invoke(actionToBeRouted.getController().newInstance(provider));
             }
-
 
             if (retVal instanceof StreamResponse)
             {
@@ -167,13 +182,8 @@ public class Router
         }
     }
 
-
-    private NanoHTTPD.Response processPost(NanoHTTPD.IHTTPSession session, IMinecraftProvider provider)
+    private NanoHTTPD.Response processPost(NanoHTTPD.IHTTPSession session, IMinecraftProvider provider, Action actionToBeRouted)
     {
-        String uri = session.getUri();
-        String[] segments = uri.split("/");
-        final String controller = segments[1];
-        String action = segments[2];
         ServiceResponse body = null;
 
         try
@@ -182,16 +192,7 @@ public class Router
             int length = Integer.parseInt(contentLength);
             String postBody;
 
-            Class<?> selectedController = findControllerForRequest(controller);
-
-            if (selectedController == null)
-            {
-                //todo: string.Format
-                return processBadRequest(session, "Action " + action + " on " + controller + " not found"); //todo: return 404
-            }
-
-            Method selectedMethod = findMethodForRequest("post", selectedController, action);
-            Type type = findTypeForRequest(selectedMethod);
+            Type type = findTypeForRequest(actionToBeRouted.getMethod());
 
             Object request;
             if (length > 0)
@@ -201,17 +202,15 @@ public class Router
                 request = gson.fromJson(postBody, type);
             }
 
-            Constructor<?> controllerConstructor = selectedController.getConstructor(IMinecraftProvider.class);
-
-            String[] callingParameters = getParametersForMethod(selectedMethod, segments);
+            String[] callingParameters = getParametersForMethod(actionToBeRouted.getMethod(), actionToBeRouted.getParameters());
             if (callingParameters.length > 0)
             {
-                selectedMethod.invoke(controllerConstructor.newInstance(provider), callingParameters);
+                actionToBeRouted.getMethod().invoke(actionToBeRouted.getController().newInstance(provider), callingParameters);
             }
 
             else
             {
-                selectedMethod.invoke(controllerConstructor.newInstance(provider));
+                actionToBeRouted.getMethod().invoke(actionToBeRouted.getController().newInstance(provider));
             }
         }
                 catch (Exception e)
@@ -252,7 +251,7 @@ public class Router
     }
 
 
-    private String[] getParametersForMethod(Method selectedMethod, String[] urlSegments)
+    private String[] getParametersForMethod(Method selectedMethod, List<String> urlSegments)
     {
         //this kinda sucks
         Parameters annotationParameters = selectedMethod.getAnnotation(Parameters.class);
@@ -267,10 +266,10 @@ public class Router
 
 
         //split them off so they can be used as method arguments
-        if (parameters.length == urlSegments.length - 3)
+        if (parameters.length == urlSegments.size() - 3)
         {
-            callingParameters = new String[urlSegments.length - 3];
-            System.arraycopy(urlSegments, 3, callingParameters, 0, urlSegments.length - 3);
+            callingParameters = new String[urlSegments.size() - 3];
+            System.arraycopy(urlSegments, 3, callingParameters, 0, urlSegments.size() - 3);
         }
 
         return callingParameters;

@@ -1,7 +1,7 @@
 package org.voltagex.rebridge.serializers;
 
 import com.google.gson.*;
-import org.voltagex.rebridge.entities.Simple;
+import org.voltagex.rebridgeapi.entities.Simple;
 
 import java.lang.reflect.Type;
 

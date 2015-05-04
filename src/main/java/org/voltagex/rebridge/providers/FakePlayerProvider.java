@@ -1,7 +1,7 @@
 package org.voltagex.rebridge.providers;
 
-import org.voltagex.rebridge.entities.ObjectResponse;
-import org.voltagex.rebridge.entities.Position;
+import org.voltagex.rebridgeapi.entities.ObjectResponse;
+import org.voltagex.rebridgeapi.entities.Position;
 
 public class FakePlayerProvider implements IPlayerProvider
 {

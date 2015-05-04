@@ -9,10 +9,10 @@ import net.minecraftforge.fml.common.Mod.EventHandler;
 import net.minecraftforge.fml.common.event.FMLInitializationEvent;
 import net.minecraftforge.fml.common.event.FMLPreInitializationEvent;
 import net.minecraftforge.fml.common.event.FMLServerStartingEvent;
-import org.voltagex.rebridge.entities.DynamicCommand;
 import org.voltagex.rebridge.providers.FakeMinecraftProvider;
 import org.voltagex.rebridge.providers.IMinecraftProvider;
 import org.voltagex.rebridge.providers.MinecraftProvider;
+import org.voltagex.rebridgeapi.entities.DynamicCommand;
 
 import java.util.Set;
 
@@ -80,6 +80,12 @@ public class Rebridge extends NanoHTTPD
 
     @Override
     public Response serve(IHTTPSession session)
+    {
+        return router.route(session);
+    }
+
+    //todo: is there a better way of setting up for testing?
+    public Response serve(Router router, IHTTPSession session)
     {
         return router.route(session);
     }

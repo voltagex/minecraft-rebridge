@@ -1,4 +1,4 @@
-package org.voltagex.rebridge.entities;
+package org.voltagex.rebridgeapi.entities;
 
 import java.io.InputStream;
 

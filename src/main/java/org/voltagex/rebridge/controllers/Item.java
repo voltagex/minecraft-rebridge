@@ -3,10 +3,10 @@ package org.voltagex.rebridge.controllers;
 import net.minecraft.client.Minecraft;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.ResourceLocation;
-import org.voltagex.rebridge.annotations.Controller;
-import org.voltagex.rebridge.annotations.Parameters;
-import org.voltagex.rebridge.entities.StreamResponse;
 import org.voltagex.rebridge.providers.IMinecraftProvider;
+import org.voltagex.rebridgeapi.annotations.Controller;
+import org.voltagex.rebridgeapi.annotations.Parameters;
+import org.voltagex.rebridgeapi.entities.StreamResponse;
 
 import java.io.IOException;
 import java.io.InputStream;
