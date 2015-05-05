@@ -98,6 +98,9 @@ public class Router
         String action = segments.get(0);
         segments.remove(0);
 
+        String method = segments.get(0);
+        segments.remove(0);
+
         Class<?> selectedController;
 
         //if the first parameter is actually a mod namespace
@@ -119,7 +122,7 @@ public class Router
 
         try
         {
-            Method selectedMethod = findMethodForRequest(httpMethod, selectedController, action);
+            Method selectedMethod = findMethodForRequest(httpMethod, selectedController, method);
             Constructor<?> controllerConstructor = needsMinecraftProvider ? selectedController.getConstructor(IMinecraftProvider.class) : selectedController.getConstructor();
             actionToBeRouted = new Action(controllerConstructor, selectedMethod, segments);
         }
