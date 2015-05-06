@@ -7,6 +7,7 @@ import net.minecraftforge.common.config.Property;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.common.Mod.EventHandler;
 import net.minecraftforge.fml.common.event.FMLInitializationEvent;
+import net.minecraftforge.fml.common.event.FMLInterModComms;
 import net.minecraftforge.fml.common.event.FMLPreInitializationEvent;
 import net.minecraftforge.fml.common.event.FMLServerStartingEvent;
 import org.voltagex.rebridge.providers.FakeMinecraftProvider;
@@ -102,6 +103,15 @@ public class Rebridge extends NanoHTTPD
         {
         }
         System.out.println("Server stopped.\n");
+    }
+
+    @Mod.EventHandler
+    public void processIMC(FMLInterModComms.IMCEvent event)
+    {
+        for (final FMLInterModComms.IMCMessage imcMessage : event.getMessages())
+        {
+            System.out.println(imcMessage.key);
+        }
     }
 
 }

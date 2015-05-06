@@ -72,3 +72,21 @@ processResources
         exclude 'mcmod.info'
     }
 }
+
+//to build a sources jar
+//task apiJar(type: Jar, dependsOn: 'sourceMainJava') {
+//    from sourceSets.main.allJava
+//    include 'org/voltagex/rebridge/api/**'
+//    classifier 'api'
+//}
+
+task apiJar(type: Jar, dependsOn: 'classes') {
+    from sourceSets.main.allJava
+    from sourceSets.main.output.classesDir
+    include 'org/voltagex/rebridge/api/**'
+    classifier 'api'
+}
+
+artifacts {
+    archives apiJar
+}

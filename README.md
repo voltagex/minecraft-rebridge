@@ -12,12 +12,6 @@
 * Heavily inspired by an old mod called Modbridge, unfortunately the source to that was lost so here we are
 
 #To do
-## Investigate Java 8
-* This would allow nice things like https://vert-x3.github.io/
-
-## Investigate Vert.X
-* NanoHTTPD is pretty limited, is it worth moving to a full framework?
-
 ## Routing
 * probably similar to Microsoft's WebAPI routing
 
@@ -36,3 +30,6 @@ GET /api/player/{playername}/{attribute}
 ```
 
 * Implement SMPPlayerProvider or similar
+
+## API
+* Figure out if Loader.instance().getActiveModList().get(4).getMod().getClass().getMethods()[0].invoke(Loader.instance().getActiveModList().get(4).getMod().getClass().newInstance()) really is an abomination
