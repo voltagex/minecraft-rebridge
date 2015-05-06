@@ -12,11 +12,11 @@ import org.reflections.scanners.*;
 import org.reflections.util.ClasspathHelper;
 import org.reflections.util.ConfigurationBuilder;
 import org.voltagex.rebridge.providers.IMinecraftProvider;
+import org.voltagex.rebridge.api.entities.*;
 import org.voltagex.rebridge.serializers.PositionResponseSerializer;
 import org.voltagex.rebridge.serializers.SimpleResponseSerializer;
-import org.voltagex.rebridgeapi.annotations.Controller;
-import org.voltagex.rebridgeapi.annotations.Parameters;
-import org.voltagex.rebridgeapi.entities.*;
+import org.voltagex.rebridge.api.annotations.Controller;
+import org.voltagex.rebridge.api.annotations.Parameters;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;

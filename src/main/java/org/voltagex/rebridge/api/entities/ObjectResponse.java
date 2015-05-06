@@ -1,4 +1,4 @@
-package org.voltagex.rebridgeapi.entities;
+package org.voltagex.rebridge.api.entities;
 
 public class ObjectResponse extends ServiceResponse
 {

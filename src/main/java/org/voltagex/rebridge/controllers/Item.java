@@ -4,9 +4,9 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.ResourceLocation;
 import org.voltagex.rebridge.providers.IMinecraftProvider;
-import org.voltagex.rebridgeapi.annotations.Controller;
-import org.voltagex.rebridgeapi.annotations.Parameters;
-import org.voltagex.rebridgeapi.entities.StreamResponse;
+import org.voltagex.rebridge.api.annotations.Controller;
+import org.voltagex.rebridge.api.annotations.Parameters;
+import org.voltagex.rebridge.api.entities.StreamResponse;
 
 import java.io.IOException;
 import java.io.InputStream;

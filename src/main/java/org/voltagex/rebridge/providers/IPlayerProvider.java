@@ -1,7 +1,7 @@
 package org.voltagex.rebridge.providers;
 
-import org.voltagex.rebridgeapi.entities.ObjectResponse;
-import org.voltagex.rebridgeapi.entities.Position;
+import org.voltagex.rebridge.api.entities.ObjectResponse;
+import org.voltagex.rebridge.api.entities.Position;
 
 public interface IPlayerProvider
 {

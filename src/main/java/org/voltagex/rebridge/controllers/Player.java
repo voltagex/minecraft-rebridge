@@ -2,8 +2,8 @@ package org.voltagex.rebridge.controllers;
 
 import fi.iki.elonen.NanoHTTPD;
 import org.voltagex.rebridge.providers.IMinecraftProvider;
-import org.voltagex.rebridgeapi.annotations.Controller;
-import org.voltagex.rebridgeapi.entities.*;
+import org.voltagex.rebridge.api.annotations.Controller;
+import org.voltagex.rebridge.api.entities.*;
 
 @Controller
 public class Player

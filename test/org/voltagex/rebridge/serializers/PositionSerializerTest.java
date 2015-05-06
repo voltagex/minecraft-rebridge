@@ -4,7 +4,7 @@ import com.google.gson.GsonBuilder;
 import com.google.gson.JsonParseException;
 import org.testng.annotations.BeforeTest;
 import org.testng.annotations.Test;
-import org.voltagex.rebridgeapi.entities.Position;
+import org.voltagex.rebridge.api.entities.Position;
 
 import static org.testng.Assert.assertEquals;
 

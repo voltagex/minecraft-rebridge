@@ -12,7 +12,7 @@ import net.minecraftforge.fml.common.event.FMLServerStartingEvent;
 import org.voltagex.rebridge.providers.FakeMinecraftProvider;
 import org.voltagex.rebridge.providers.IMinecraftProvider;
 import org.voltagex.rebridge.providers.MinecraftProvider;
-import org.voltagex.rebridgeapi.entities.DynamicCommand;
+import org.voltagex.rebridge.api.entities.DynamicCommand;
 
 import java.util.Set;
 

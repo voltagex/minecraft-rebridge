@@ -1,4 +1,4 @@
-package org.voltagex.rebridgeapi.annotations;
+package org.voltagex.rebridge.api.annotations;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;

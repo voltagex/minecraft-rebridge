@@ -1,4 +1,4 @@
-package org.voltagex.rebridgeapi.entities;
+package org.voltagex.rebridge.api.entities;
 
 import net.minecraft.client.settings.GameSettings;
 

@@ -5,9 +5,9 @@ import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.BlockPos;
 import net.minecraft.util.RegistryNamespaced;
-import org.voltagex.rebridgeapi.entities.InventoryItem;
-import org.voltagex.rebridgeapi.entities.ObjectResponse;
-import org.voltagex.rebridgeapi.entities.Position;
+import org.voltagex.rebridge.api.entities.InventoryItem;
+import org.voltagex.rebridge.api.entities.ObjectResponse;
+import org.voltagex.rebridge.api.entities.Position;
 
 import java.util.ArrayList;
 

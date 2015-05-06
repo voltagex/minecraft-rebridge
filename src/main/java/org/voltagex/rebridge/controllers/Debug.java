@@ -7,12 +7,12 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.util.ResourceLocation;
 import net.minecraftforge.fml.common.registry.GameData;
 import org.voltagex.rebridge.providers.IMinecraftProvider;
-import org.voltagex.rebridgeapi.annotations.Controller;
-import org.voltagex.rebridgeapi.annotations.Parameters;
-import org.voltagex.rebridgeapi.entities.GameSettingsResponse;
-import org.voltagex.rebridgeapi.entities.ObjectResponse;
-import org.voltagex.rebridgeapi.entities.ServiceResponse;
-import org.voltagex.rebridgeapi.entities.StreamResponse;
+import org.voltagex.rebridge.api.annotations.Controller;
+import org.voltagex.rebridge.api.annotations.Parameters;
+import org.voltagex.rebridge.api.entities.GameSettingsResponse;
+import org.voltagex.rebridge.api.entities.ObjectResponse;
+import org.voltagex.rebridge.api.entities.ServiceResponse;
+import org.voltagex.rebridge.api.entities.StreamResponse;
 
 import java.io.IOException;
 import java.io.InputStream;

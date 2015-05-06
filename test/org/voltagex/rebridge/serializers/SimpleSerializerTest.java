@@ -3,7 +3,7 @@ package org.voltagex.rebridge.serializers;
 import com.google.gson.GsonBuilder;
 import org.testng.annotations.BeforeTest;
 import org.testng.annotations.Test;
-import org.voltagex.rebridgeapi.entities.Simple;
+import org.voltagex.rebridge.api.entities.Simple;
 
 import static org.testng.Assert.assertEquals;
 
