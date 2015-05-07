@@ -1,9 +1,6 @@
 package org.voltagex.rebridge.predicates;
 
-import com.google.common.base.Function;
-import com.google.common.base.Predicate;
 import java.lang.reflect.Method;
-import javax.annotation.Nullable;
 
 /**
  * Created by Adam on 4/26/2015.

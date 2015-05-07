@@ -39,10 +39,20 @@ public class Router
     }
 
 
-    public static void AddRoute(String namespace, Class<?> controllerClass)
+    public void addRoute(String modid, Class<?> controllerClass)
     {
-        System.out.println("Called addRoute from " + namespace);
-        registeredControllers.put(namespace, controllerClass);
+        System.out.println("Called addRoute from " + modid);
+        registeredControllers.put(modid, controllerClass);
+    }
+
+    public void addRoute(String modid, List<Class<?>> controllers)
+    {
+        System.out.println("Called addRoute from " + modid);
+        for (Class<?> controller : controllers)
+        {
+            //todo: URGENT - replace with MultiMap - multiple controllers can't be registered under the same modid
+            registeredControllers.put(modid, controller);
+        }
     }
 
     public Router(IMinecraftProvider provider)
@@ -55,7 +65,6 @@ public class Router
 
         Reflections reflections;
 
-        //todo: do this once per run, not per call
         reflections = new Reflections(new ConfigurationBuilder()
                 .setUrls(ClasspathHelper.forPackage("org.voltagex.rebridge.controllers"))
                 .setScanners(
@@ -104,6 +113,7 @@ public class Router
         Class<?> selectedController;
 
         //if the first parameter is actually a mod namespace
+        //todo: fix this so the actual controller name can be passed in too
         if (registeredControllers.containsKey(action))
         {
             selectedController = registeredControllers.get(action);
@@ -116,13 +126,21 @@ public class Router
             if (selectedController == null)
             {
                 //todo: string.Format
-                return processBadRequest(session, "Action " + action + " not found"); //todo: return 404
+                return processBadRequest(session, "Controller for " + action + " not found"); //todo: return 404
             }
         }
 
         try
         {
+
             Method selectedMethod = findMethodForRequest(httpMethod, selectedController, method);
+
+            if (selectedMethod == null)
+            {
+                return processBadRequest(session, "Method " + method + " on " + selectedController + " not found"); //todo: return 404
+            }
+
+            //todo: why don't implicit constructors work here?
             Constructor<?> controllerConstructor = needsMinecraftProvider ? selectedController.getConstructor(IMinecraftProvider.class) : selectedController.getConstructor();
             actionToBeRouted = new Action(controllerConstructor, selectedMethod, segments);
         }
@@ -132,14 +150,15 @@ public class Router
             return processBadRequest(session, e);
         }
 
+        //todo: these ternary operators are starting to give me the shits
         if (httpMethod.equals("GET"))
         {
-            return processGet(session, provider, actionToBeRouted);
+            return processGet(session, needsMinecraftProvider ? provider : null, actionToBeRouted);
         }
 
         else if (httpMethod.equals("POST"))
         {
-            return processPost(session, provider, actionToBeRouted);
+            return processPost(session, needsMinecraftProvider ? provider : null, actionToBeRouted);
         }
 
         else
@@ -159,14 +178,16 @@ public class Router
             Object retVal;
             String[] callingParameters = getParametersForMethod(actionToBeRouted.getMethod(), actionToBeRouted.getParameters());
 
+            //todo: didn't we just do this logic before?
+            Object controllerInstance = provider == null ? actionToBeRouted.getController().newInstance() : actionToBeRouted.getController().newInstance(provider);
             if (callingParameters.length > 0)
             {
-                retVal = actionToBeRouted.getMethod().invoke(actionToBeRouted.getController().newInstance(provider), callingParameters);
+                retVal = actionToBeRouted.getMethod().invoke(controllerInstance, callingParameters);
             }
 
             else
             {
-                retVal = actionToBeRouted.getMethod().invoke(actionToBeRouted.getController().newInstance(provider));
+                retVal = actionToBeRouted.getMethod().invoke(controllerInstance);
             }
 
             if (retVal instanceof StreamResponse)
@@ -175,8 +196,15 @@ public class Router
                 return new NanoHTTPD.Response(streamResponse.getStatus(), streamResponse.getMimeType(), ((StreamResponse) retVal).getInputStream());
             }
 
+
+            NanoHTTPD.Response.IStatus status = NanoHTTPD.Response.Status.OK;
+            if (retVal instanceof ServiceResponse)
+            {
+                status = ((ServiceResponse) retVal).getStatus();
+            }
+
             String json = gson.toJson(retVal);
-            return new NanoHTTPD.Response(((ServiceResponse) retVal).getStatus(), MIMEType, json);
+            return new NanoHTTPD.Response(status, MIMEType, json);
         }
 
         catch (Exception e)

@@ -1,20 +1,31 @@
 package org.voltagex.rebridge;
 
+import com.google.common.base.Predicate;
+import com.google.common.collect.Iterables;
+import com.google.common.collect.Lists;
 import fi.iki.elonen.NanoHTTPD;
 import net.minecraftforge.common.config.ConfigCategory;
 import net.minecraftforge.common.config.Configuration;
 import net.minecraftforge.common.config.Property;
+import net.minecraftforge.fml.common.Loader;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.common.Mod.EventHandler;
+import net.minecraftforge.fml.common.ModContainer;
 import net.minecraftforge.fml.common.event.FMLInitializationEvent;
 import net.minecraftforge.fml.common.event.FMLInterModComms;
 import net.minecraftforge.fml.common.event.FMLPreInitializationEvent;
 import net.minecraftforge.fml.common.event.FMLServerStartingEvent;
+import org.reflections.Reflections;
+import org.reflections.scanners.*;
+import org.reflections.util.ClasspathHelper;
+import org.reflections.util.ConfigurationBuilder;
+import org.voltagex.rebridge.api.annotations.Controller;
+import org.voltagex.rebridge.api.entities.DynamicCommand;
 import org.voltagex.rebridge.providers.FakeMinecraftProvider;
 import org.voltagex.rebridge.providers.IMinecraftProvider;
 import org.voltagex.rebridge.providers.MinecraftProvider;
-import org.voltagex.rebridge.api.entities.DynamicCommand;
 
+import java.util.List;
 import java.util.Set;
 
 @Mod(modid = Consts.MODID, version = Consts.VERSION)
@@ -110,7 +121,45 @@ public class Rebridge extends NanoHTTPD
     {
         for (final FMLInterModComms.IMCMessage imcMessage : event.getMessages())
         {
-            System.out.println(imcMessage.key);
+            ModContainer container;
+            if (imcMessage.key == "register")
+            {
+
+                List<ModContainer> modContainers = Loader.instance().getActiveModList();
+                container = Iterables.find(modContainers, new Predicate<ModContainer>()
+                {
+                    public boolean apply(ModContainer input)
+                    {
+                        return input.getName().contains(imcMessage.getSender());
+                    }
+                }, null);
+
+                Reflections reflections;
+
+                //todo: do this once per run, not per call
+                reflections = new Reflections(new ConfigurationBuilder()
+                        .setUrls(ClasspathHelper.forPackage(container.getMod().getClass().getPackage().getName()))
+                        .setScanners(
+                                new SubTypesScanner(true),
+                                new TypeAnnotationsScanner(),
+                                new FieldAnnotationsScanner(),
+                                new MethodAnnotationsScanner(),
+                                new MethodParameterScanner(),
+                                new MethodParameterNamesScanner(),
+                                new MemberUsageScanner()));
+                List<Class<?>> newControllers = Lists.newArrayList(reflections.getTypesAnnotatedWith(Controller.class));
+
+                //todo: this nasty hack shouldn't really be needed but I only really want to import one "level" of controllers
+                   List<Class<?>> filteredControllers = Lists.newArrayList(Iterables.filter(newControllers, new Predicate<Class<?>>() {
+                       @Override
+                       public boolean apply(Class<?> input)
+                       {
+                           return input.getName().contains(imcMessage.getSender());
+                       }
+                   }));
+
+                router.addRoute(imcMessage.getSender(),filteredControllers);
+            }
         }
     }
 
