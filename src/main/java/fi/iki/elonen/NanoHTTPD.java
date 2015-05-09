@@ -1,28 +1,11 @@
 package fi.iki.elonen;
 
 import java.io.*;
-import java.net.InetAddress;
-import java.net.InetSocketAddress;
-import java.net.ServerSocket;
-import java.net.Socket;
-import java.net.SocketException;
-import java.net.SocketTimeoutException;
-import java.net.URLDecoder;
+import java.net.*;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Calendar;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Set;
-import java.util.StringTokenizer;
-import java.util.TimeZone;
+import java.util.*;
 
 /**
  * A simple, tiny, nicely embeddable HTTP server in Java
@@ -953,26 +936,21 @@ public abstract class NanoHTTPD {
                 size = 0;
             }
 
-            // Now read all the body and write it to f
-            byte[] buf = new byte[512];
-            byte[] output = new byte[0];
 
             //http://stackoverflow.com/a/9133993/229631
             ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
 
-            while (rlen > 0 && size > 0) {
-                rlen = inputStream.read(buf, 0, (int)Math.min(size, 512));
-                if (size < 512) {
-                    outputStream.write(buf,0,(int)size);
-                    rlen = 0;
-                }
-
-                size -= rlen;
-                if (rlen > 0) {
-                    outputStream.write(buf);
-                }
+            byte[] buffer = new byte[1024];
+            int len;
+            while ((len = inputStream.read(buffer)) != -1) {
+                outputStream.write(buffer, 0, len);
             }
-            return new String(outputStream.toByteArray());
+
+            byte[] outputBytes = outputStream.toByteArray();
+            //todo: this will break with size > int.max
+             byte[] postBodyBytes = Arrays.copyOfRange(outputBytes, outputBytes.length - (int) size, outputBytes.length);
+
+           return new String(postBodyBytes);
         }
 
         @Override

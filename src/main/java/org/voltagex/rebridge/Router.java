@@ -1,7 +1,9 @@
 package org.voltagex.rebridge;
 
 import com.google.common.base.Predicate;
+import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.Iterables;
+import com.google.common.collect.ListMultimap;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonObject;
@@ -11,12 +13,12 @@ import org.reflections.Reflections;
 import org.reflections.scanners.*;
 import org.reflections.util.ClasspathHelper;
 import org.reflections.util.ConfigurationBuilder;
-import org.voltagex.rebridge.providers.IMinecraftProvider;
-import org.voltagex.rebridge.api.entities.*;
-import org.voltagex.rebridge.serializers.PositionResponseSerializer;
-import org.voltagex.rebridge.serializers.SimpleResponseSerializer;
 import org.voltagex.rebridge.api.annotations.Controller;
 import org.voltagex.rebridge.api.annotations.Parameters;
+import org.voltagex.rebridge.api.entities.*;
+import org.voltagex.rebridge.providers.IMinecraftProvider;
+import org.voltagex.rebridge.serializers.PositionResponseSerializer;
+import org.voltagex.rebridge.serializers.SimpleResponseSerializer;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
@@ -30,7 +32,8 @@ public class Router
     private static Gson gson;
     private final static String MIMEType = "application/json";
     private static HashSet<Class<?>> avaliableControllers = new HashSet<Class<?>>();
-    private static HashMap<String,Class<?>> registeredControllers = new HashMap<String, Class<?>>();
+    private static ListMultimap<String, Class<?>> registeredControllers = ArrayListMultimap.create();
+
     private static IMinecraftProvider provider;
 
     private Router()
@@ -38,19 +41,11 @@ public class Router
 
     }
 
-
-    public void addRoute(String modid, Class<?> controllerClass)
-    {
-        System.out.println("Called addRoute from " + modid);
-        registeredControllers.put(modid, controllerClass);
-    }
-
     public void addRoute(String modid, List<Class<?>> controllers)
     {
         System.out.println("Called addRoute from " + modid);
         for (Class<?> controller : controllers)
         {
-            //todo: URGENT - replace with MultiMap - multiple controllers can't be registered under the same modid
             registeredControllers.put(modid, controller);
         }
     }
@@ -93,8 +88,6 @@ public class Router
         // 1: Player
         // 2: Position
 
-
-        //todo: do we really need 3 parts of the path?
         if (segments.size() < 3)
         {
             return processBadRequest(session);
@@ -107,21 +100,35 @@ public class Router
         String action = segments.get(0);
         segments.remove(0);
 
-        String method = segments.get(0);
-        segments.remove(0);
+        String method;
 
         Class<?> selectedController;
+        List<Class<?>> modControllers;
 
         //if the first parameter is actually a mod namespace
         //todo: fix this so the actual controller name can be passed in too
         if (registeredControllers.containsKey(action))
         {
-            selectedController = registeredControllers.get(action);
+            String modName = action;
+            String modController = segments.get(0);
+            method = segments.get(1);
+            segments.remove(0);
+            segments.remove(0);
+
+            modControllers = registeredControllers.get(modName);
             needsMinecraftProvider = false;
+            selectedController = findControllerForRequest(modController, modControllers);
+
+            if (selectedController == null)
+            {
+                return processBadRequest(session, "Controller for " + method + " in " + modName + " not found");
+            }
         }
 
         else
         {
+            method = segments.get(0);
+            segments.remove(0);
             selectedController = findControllerForRequest(action);
             if (selectedController == null)
             {
@@ -132,7 +139,6 @@ public class Router
 
         try
         {
-
             Method selectedMethod = findMethodForRequest(httpMethod, selectedController, method);
 
             if (selectedMethod == null)
@@ -169,10 +175,6 @@ public class Router
 
     private NanoHTTPD.Response processGet(NanoHTTPD.IHTTPSession session, IMinecraftProvider provider, Action actionToBeRouted)
     {
-        //todo: handle parameters
-        //todo: handle routes from mods
-        //todo: move to Guava MultiMap to allow multiple controllers from the same namespace
-
         try
         {
             Object retVal;
@@ -219,42 +221,56 @@ public class Router
 
         try
         {
+            int length = 0;
             String contentLength = session.getHeaders().get("content-length");
-            int length = Integer.parseInt(contentLength);
+            try
+            {
+                length = Integer.parseInt(contentLength);
+            }
+            catch (NumberFormatException nfe)
+            {
+                return processBadRequest(session, "Content-Length missing or invalid");
+            }
+
             String postBody;
 
             Type type = findTypeForRequest(actionToBeRouted.getMethod());
 
-            Object request;
+            Object request = null;
             if (length > 0)
             {
                 //https://github.com/NanoHttpd/nanohttpd/issues/99
-                postBody = session.parsePost();
-                request = gson.fromJson(postBody, type);
+                request = gson.fromJson(session.parsePost(), type);
             }
 
-            String[] callingParameters = getParametersForMethod(actionToBeRouted.getMethod(), actionToBeRouted.getParameters());
-            if (callingParameters.length > 0)
+            //todo: didn't we just do this logic before?
+            Object controllerInstance = provider == null ? actionToBeRouted.getController().newInstance() : actionToBeRouted.getController().newInstance(provider);
+            if (request != null)
             {
-                actionToBeRouted.getMethod().invoke(actionToBeRouted.getController().newInstance(provider), callingParameters);
+                actionToBeRouted.getMethod().invoke(controllerInstance, request);
             }
 
             else
             {
-                actionToBeRouted.getMethod().invoke(actionToBeRouted.getController().newInstance(provider));
+                actionToBeRouted.getMethod().invoke(controllerInstance);
             }
         }
-                catch (Exception e)
-                {
-                    return processBadRequest(session,e);
-                }
-
-            return new NanoHTTPD.Response(NanoHTTPD.Response.Status.ACCEPTED, MIMEType,"");
+        catch (Exception e)
+        {
+            return processBadRequest(session, e);
         }
+
+        return new NanoHTTPD.Response(NanoHTTPD.Response.Status.ACCEPTED, MIMEType, "");
+    }
 
     private Class<?> findControllerForRequest(final String controller)
     {
-        return Iterables.find(avaliableControllers, new Predicate<Class<?>>()
+        return findControllerForRequest(controller, avaliableControllers);
+    }
+
+    private Class<?> findControllerForRequest(final String controller, final Iterable<Class<?>> controllers)
+    {
+        return Iterables.find(controllers, new Predicate<Class<?>>()
         {
             public boolean apply(Class<?> input)
             {
@@ -275,10 +291,11 @@ public class Router
         }
         return null;
     }
+
     //todo: HACK: this is not good, it's imposing constraints on the variable order for actions
     private Type findTypeForRequest(Method selectedMethod)
     {
-       return selectedMethod.getParameterTypes()[0];
+        return selectedMethod.getParameterTypes()[0];
     }
 
 
@@ -309,7 +326,7 @@ public class Router
     //todo: clean up bad request processing
     private NanoHTTPD.Response processBadRequest(NanoHTTPD.IHTTPSession session)
     {
-       return processBadRequest(session, "Bad request for " + session.getUri());
+        return processBadRequest(session, "Bad request for " + session.getUri());
     }
 
     private NanoHTTPD.Response processBadRequest(NanoHTTPD.IHTTPSession session, Throwable exception)
@@ -323,7 +340,7 @@ public class Router
         String message = exception.getMessage() == null ? "" : exception.getMessage();
 
 
-        exceptionJson.add("message",new JsonPrimitive(exception.toString() + ": " + message));
+        exceptionJson.add("message", new JsonPrimitive(exception.toString() + ": " + message));
         exceptionJson.add("stacktrace", gson.toJsonTree(exception.getStackTrace()));
 
         return new NanoHTTPD.Response
