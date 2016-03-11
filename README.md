@@ -8,7 +8,10 @@
 * Select Gradle and import
 
 ##Notes
-* NanoHTTPD included as source until https://github.com/NanoHttpd/nanohttpd/issues/169 is resolved
+* Coming back to this a long time later:
+  * http://www.minecraftforge.net/forum/index.php?topic=14048.0#post_update_forgegradle
+  * http://www.minecraftforge.net/forum/index.php/topic,34500.msg181756.html#msg181756
+* NanoHTTPD included as source until https://github.com/NanoHttpd/nanohttpd/issues/99 is resolved
 * Heavily inspired by an old mod called Modbridge, unfortunately the source to that was lost so here we are
 
 #To do
@@ -29,7 +32,9 @@ POST /api/player/{player}/{attribute}
 GET /api/player/{playername}/{attribute}
 ```
 
+* Should routing be provided/hinted by the I\*Provider?
+
 * Implement SMPPlayerProvider or similar
 
 ## API
-* Figure out if Loader.instance().getActiveModList().get(4).getMod().getClass().getMethods()[0].invoke(Loader.instance().getActiveModList().get(4).getMod().getClass().newInstance()) really is an abomination
+* Test it.
