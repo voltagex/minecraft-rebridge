@@ -8,6 +8,9 @@
 * Select Gradle and import
 
 ##Notes
+* Coming back to this a long time later:
+  * http://www.minecraftforge.net/forum/index.php?topic=14048.0#post_update_forgegradle
+  * http://www.minecraftforge.net/forum/index.php/topic,34500.msg181756.html#msg181756
 * NanoHTTPD included as source until https://github.com/NanoHttpd/nanohttpd/issues/99 is resolved
 * Heavily inspired by an old mod called Modbridge, unfortunately the source to that was lost so here we are
 
