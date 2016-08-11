@@ -1,11 +1,12 @@
 package org.voltagex.rebridge.api.entities;
 
+import net.minecraft.command.CommandBase;
 import net.minecraft.command.CommandException;
-import net.minecraft.command.ICommand;
 import net.minecraft.command.ICommandSender;
-import net.minecraft.util.BlockPos;
-import net.minecraft.util.ChatComponentText;
-import net.minecraft.util.IChatComponent;
+import net.minecraft.server.MinecraftServer;
+import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.text.ITextComponent;
+import net.minecraft.util.text.TextComponentString;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpGet;
@@ -18,7 +19,7 @@ import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.List;
 
-public class DynamicCommand implements ICommand
+public class DynamicCommand extends CommandBase
 {
     private String name;
     private String callbackURL;
@@ -30,7 +31,7 @@ public class DynamicCommand implements ICommand
 
     }
     @Override
-    public String getName()
+    public String getCommandName()
     {
         return this.name;
     }
@@ -42,7 +43,12 @@ public class DynamicCommand implements ICommand
     }
 
     @Override
-    public List getAliases()
+    public boolean checkPermission(MinecraftServer server, ICommandSender sender) {
+        return true;
+    }
+
+    @Override
+    public List getCommandAliases()
     {
         ArrayList<String> aliases = new ArrayList<String>();
         if (name.toLowerCase() != name)
@@ -54,19 +60,20 @@ public class DynamicCommand implements ICommand
     }
 
     @Override
-    public void execute(ICommandSender sender, String[] args) throws CommandException
+    public void execute(MinecraftServer server, ICommandSender sender, String[] params) throws CommandException
     {
-        IChatComponent message = new ChatComponentText("executed " + this.name);
+        ITextComponent message = new TextComponentString("executed " + this.name);
         sender.addChatMessage(message);
 
         HttpClient client = HttpClients.createDefault();
         try
         {
             URIBuilder builder = new URIBuilder(this.callbackURL);
-            if (args.length > 0)
+            //todo: handle new parameter format
+            /*if (args.length > 0)
             {
                 builder.addParameter("parameter", args[0]);
-            }
+            }*/
                 HttpGet getRequest = new HttpGet(builder.build());
                 HttpResponse response = client.execute(getRequest);
 
@@ -80,7 +87,7 @@ public class DynamicCommand implements ICommand
                         stringBuilder.append(line);
                     }
 
-                    message = new ChatComponentText(stringBuilder.toString());
+                    message = new TextComponentString(stringBuilder.toString());
                     sender.addChatMessage(message);
                 }
 
@@ -96,14 +103,10 @@ public class DynamicCommand implements ICommand
         }
     }
 
-    @Override
-    public boolean canCommandSenderUse(ICommandSender sender)
-    {
-        return true;
-    }
+
 
     @Override
-    public List addTabCompletionOptions(ICommandSender sender, String[] args, BlockPos pos)
+    public List<String> getTabCompletionOptions(MinecraftServer server, ICommandSender sender, String[] args, BlockPos pos)
     {
         return null;
     }
@@ -114,9 +117,4 @@ public class DynamicCommand implements ICommand
         return false;
     }
 
-    @Override
-    public int compareTo(Object o)
-    {
-        return 0;
-    }
 }

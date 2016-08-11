@@ -15,29 +15,6 @@ import java.util.ArrayList;
 @Controller
 public class Item
 {
-    private IMinecraftProvider provider;
-
-    private Item()
-    {
-
-    }
-
-    public Item(IMinecraftProvider provider)
-    {
-        this.provider = provider;
-    }
-
-    @Parameters(Names = {"Name"})
-    public StreamResponse getIcon(String Name) throws IOException
-    {
-        ArrayList<ItemStack> subItems = new ArrayList<ItemStack>();
-        net.minecraft.item.Item item70 = net.minecraft.item.Item.getByNameOrId(Name);
-        item70.getSubItems(item70, null, subItems);
-
-        String iconName = Minecraft.getMinecraft().getRenderItem().getItemModelMesher().getItemModel(subItems.get(0)).getTexture().getIconName();
-        String filePath = "textures/" + iconName.split("minecraft:")[1] + ".png";
-        InputStream stream = Minecraft.getMinecraft().getResourceManager().getResource(new ResourceLocation(filePath)).getInputStream();
-        return new StreamResponse(stream, "image/png");
-    }
+    //todo: re-build this controller for 1.10
 }
 

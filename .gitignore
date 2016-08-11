@@ -7,5 +7,5 @@
 !gradlew.bat
 !*.
 
-!.idea/runConfigurations
+!.idea/runConfigurations/*
 !test/

@@ -36,11 +36,13 @@ public class Debug
 
     }
 
+    //todo: can this still be done?
     public ObjectResponse getItems()
     {
-        Map<String,Integer> itemMap = new HashMap<String, Integer>();
-        GameData.getItemRegistry().serializeInto(itemMap);
-        return new ObjectResponse(itemMap);
+        //Map<String,Integer> itemMap = new HashMap<String, Integer>();
+        //GameData.getItemRegistry().serializeInto(itemMap);
+        //return new ObjectResponse(itemMap);
+        return null;
     }
 
     public ObjectResponse getSprites() throws NoSuchFieldException, IllegalAccessException
@@ -96,14 +98,15 @@ public class Debug
 
     public ServiceResponse getItemIcon() throws IOException
     {
-
-        ArrayList<ItemStack> subItems = new ArrayList<ItemStack>();
+        /*ArrayList<ItemStack> subItems = new ArrayList<ItemStack>();
         Item item = Item.getItemById(70);
         item.getSubItems(item, null, subItems);
 
+        //todo: should still be able to grab the item icon here
         String iconName = Minecraft.getMinecraft().getRenderItem().getItemModelMesher().getItemModel(subItems.get(0)).getTexture().getIconName();
         String filePath = "textures/" + iconName.split("minecraft:")[1] + ".png";
         InputStream stream = Minecraft.getMinecraft().getResourceManager().getResource(new ResourceLocation(filePath)).getInputStream();
-        return new StreamResponse(stream, "image/png");
+        return new StreamResponse(stream, "image/png");*/
+        return null;
     }
 }
