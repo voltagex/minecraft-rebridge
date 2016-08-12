@@ -15,12 +15,18 @@ import org.reflections.util.ClasspathHelper;
 import org.reflections.util.ConfigurationBuilder;
 import org.voltagex.rebridge.api.annotations.Controller;
 import org.voltagex.rebridge.api.annotations.Parameters;
-import org.voltagex.rebridge.api.entities.*;
+import org.voltagex.rebridge.api.entities.Action;
+import org.voltagex.rebridge.api.entities.Position;
+import org.voltagex.rebridge.api.entities.ServiceResponse;
+import org.voltagex.rebridge.api.entities.Simple;
 import org.voltagex.rebridge.providers.IMinecraftProvider;
 import org.voltagex.rebridge.serializers.PositionResponseSerializer;
 import org.voltagex.rebridge.serializers.SimpleResponseSerializer;
 
-import java.io.*;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -241,31 +247,34 @@ public class Router
 
     private NanoHTTPD.Response processPost(NanoHTTPD.IHTTPSession session, IMinecraftProvider provider, Action actionToBeRouted)
     {
-        ServiceResponse body = null;
+        String contentLength = session.getHeaders().get("content-length");
+        try
+        {
+            Integer.parseInt(contentLength);
+        }
+
+        catch (NumberFormatException nfe)
+        {
+            return processBadRequest(session, "Content-Length missing or invalid");
+        }
+
+        //this is a hack, but it beats shipping a custom version of NanoHTTPD
+        Map<String, String> bodyMap = new HashMap<String, String>();
 
         try
         {
-            int length = 0;
-            String contentLength = session.getHeaders().get("content-length");
-            try
-            {
-                length = Integer.parseInt(contentLength);
-            }
-            catch (NumberFormatException nfe)
-            {
-                return processBadRequest(session, "Content-Length missing or invalid");
-            }
+            session.parseBody(bodyMap);
+        }
 
-            String postBody;
+        catch (NanoHTTPD.ResponseException|IOException e)
+        {
+            return processBadRequest(session, e);
+        }
 
+        try
+        {
             Type type = findTypeForRequest(actionToBeRouted.getMethod());
-
-            Object request = null;
-            if (length > 0)
-            {
-                //https://github.com/NanoHttpd/nanohttpd/issues/99
-                //request = gson.fromJson(session.p(), type);
-            }
+            Object request = gson.fromJson(bodyMap.get("postData"), type);
 
             //todo: didn't we just do this logic before?
             Object controllerInstance = provider == null ? actionToBeRouted.getController().newInstance() : actionToBeRouted.getController().newInstance(provider);
