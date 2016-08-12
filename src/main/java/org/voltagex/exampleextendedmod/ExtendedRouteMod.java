@@ -5,7 +5,7 @@ import net.minecraftforge.fml.common.event.FMLInterModComms;
 import net.minecraftforge.fml.common.event.FMLPreInitializationEvent;
 import org.voltagex.rebridge.api.annotations.Controller;
 
-@Mod(modid = "extendedmod", version = "0.01", dependencies = "required-after:Rebridge")
+@Mod(modid = "extendedmod", version = "0.01", dependencies = "required-after:rebridge")
 @Controller
 public class ExtendedRouteMod
 {

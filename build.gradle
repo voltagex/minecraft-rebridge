@@ -12,7 +12,7 @@ buildscript {
 }
 apply plugin: 'net.minecraftforge.gradle.forge'
 
-version = "0.0.1"
+version = "0.0.2"
 group = "org.voltagex.rebridge" // http://maven.apache.org/guides/mini/guide-naming-conventions.html
 archivesBaseName = "rebridge"
 
@@ -36,6 +36,8 @@ dependencies {
     compile 'org.reflections:reflections:0.9.9'
     compile 'com.google.guava:guava:19.0'
     compile 'org.apache.httpcomponents:httpclient:4.4.1'
+    compile 'org.nanohttpd:nanohttpd:2.3.0'
+
     testCompile 'org.testng:testng:6.8.8'
 
     // real examples

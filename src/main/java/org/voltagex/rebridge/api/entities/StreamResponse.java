@@ -2,6 +2,7 @@ package org.voltagex.rebridge.api.entities;
 
 import java.io.InputStream;
 
+@Deprecated
 public class StreamResponse extends ServiceResponse
 {
     InputStream inputStream;

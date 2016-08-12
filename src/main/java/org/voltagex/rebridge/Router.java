@@ -20,11 +20,15 @@ import org.voltagex.rebridge.providers.IMinecraftProvider;
 import org.voltagex.rebridge.serializers.PositionResponseSerializer;
 import org.voltagex.rebridge.serializers.SimpleResponseSerializer;
 
+import java.io.*;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Type;
+import java.net.URL;
 import java.util.*;
+
+import static fi.iki.elonen.NanoHTTPD.newFixedLengthResponse;
 
 public class Router
 {
@@ -83,6 +87,10 @@ public class Router
         String httpMethod = session.getMethod().name();
 
         String uri = session.getUri();
+        if (uri.equals("/") && httpMethod.equals("GET"))
+        {
+            return RouteToHTML(session);
+        }
         List<String> segments = new LinkedList<String>(Arrays.asList(uri.split("/")));
         // 0: /
         // 1: Player
@@ -173,6 +181,29 @@ public class Router
         }
     }
 
+    private NanoHTTPD.Response RouteToHTML(NanoHTTPD.IHTTPSession session)
+    {
+        return responseFromResource("index.html");
+    }
+
+    private NanoHTTPD.Response responseFromResource(String resourceName)
+    {
+        ClassLoader loader = getClass().getClassLoader();
+        URL resource = loader.getResource(resourceName);
+        File resourceFile = new File(resource.getFile());
+
+        try
+        {
+            return newFixedLengthResponse(NanoHTTPD.Response.Status.OK, "text/html", new FileInputStream(resourceFile), resourceFile.length());
+        }
+
+        catch (FileNotFoundException fileNotFound)
+        {
+            //todo: proper JSON error here
+            return newFixedLengthResponse(NanoHTTPD.Response.Status.NOT_FOUND, "text/plain", resourceName + " not found");
+        }
+    }
+
     private NanoHTTPD.Response processGet(NanoHTTPD.IHTTPSession session, IMinecraftProvider provider, Action actionToBeRouted)
     {
         try
@@ -192,13 +223,6 @@ public class Router
                 retVal = actionToBeRouted.getMethod().invoke(controllerInstance);
             }
 
-            if (retVal instanceof StreamResponse)
-            {
-                StreamResponse streamResponse = (StreamResponse) retVal;
-                return new NanoHTTPD.Response(streamResponse.getStatus(), streamResponse.getMimeType(), ((StreamResponse) retVal).getInputStream());
-            }
-
-
             NanoHTTPD.Response.IStatus status = NanoHTTPD.Response.Status.OK;
             if (retVal instanceof ServiceResponse)
             {
@@ -206,7 +230,7 @@ public class Router
             }
 
             String json = gson.toJson(retVal);
-            return new NanoHTTPD.Response(status, MIMEType, json);
+            return newFixedLengthResponse(status, MIMEType, json) ;
         }
 
         catch (Exception e)
@@ -240,7 +264,7 @@ public class Router
             if (length > 0)
             {
                 //https://github.com/NanoHttpd/nanohttpd/issues/99
-                request = gson.fromJson(session.parsePost(), type);
+                //request = gson.fromJson(session.p(), type);
             }
 
             //todo: didn't we just do this logic before?
@@ -260,7 +284,7 @@ public class Router
             return processBadRequest(session, e);
         }
 
-        return new NanoHTTPD.Response(NanoHTTPD.Response.Status.ACCEPTED, MIMEType, "");
+        return newFixedLengthResponse(NanoHTTPD.Response.Status.ACCEPTED, MIMEType, "");
     }
 
     private Class<?> findControllerForRequest(final String controller)
@@ -343,10 +367,8 @@ public class Router
         exceptionJson.add("message", new JsonPrimitive(exception.toString() + ": " + message));
         exceptionJson.add("stacktrace", gson.toJsonTree(exception.getStackTrace()));
 
-        return new NanoHTTPD.Response
-                (NanoHTTPD.Response.Status.BAD_REQUEST,
-                        MIMEType, exceptionJson.toString()
-                );
+        return newFixedLengthResponse(NanoHTTPD.Response.Status.BAD_REQUEST,
+                                    MIMEType, exceptionJson.toString());
     }
 
     private NanoHTTPD.Response processBadRequest(NanoHTTPD.IHTTPSession session, String message)
@@ -354,8 +376,7 @@ public class Router
         JsonObject errorMessage = new JsonObject();
         errorMessage.add("error", new JsonPrimitive(message));
 
-        return new NanoHTTPD.Response
-                (NanoHTTPD.Response.Status.BAD_REQUEST,
+        return newFixedLengthResponse(NanoHTTPD.Response.Status.BAD_REQUEST,
                         MIMEType,
                         errorMessage.toString());
     }
