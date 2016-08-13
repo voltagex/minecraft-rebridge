@@ -10,11 +10,13 @@ public class FakeMinecraftProvider implements IMinecraftProvider
     {
         player = new FakePlayerProvider();
     }
-    public IPlayerProvider player()
+
+    public IPlayerProvider getPlayer()
     {
         return this.player;
     }
-
+    //todo: Let there be light
+    public IWorldProvider getWorld() { return null; }
     public String getProviderName()
     {
         return "Fake Minecraft Provider";

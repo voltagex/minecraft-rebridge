@@ -4,7 +4,8 @@ import com.google.gson.GsonBuilder;
 
 public interface IMinecraftProvider
 {
-    IPlayerProvider player();
+    IPlayerProvider getPlayer();
+    IWorldProvider getWorld();
     String getProviderName();
     GsonBuilder registerExtraTypeAdapters(GsonBuilder builder);
 }
