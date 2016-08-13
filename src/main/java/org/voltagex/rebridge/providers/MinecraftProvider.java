@@ -8,9 +8,13 @@ import java.lang.reflect.Field;
 
 public class MinecraftProvider implements IMinecraftProvider
 {
-    public IPlayerProvider player()
+    public IPlayerProvider getPlayer()
     {
         return new SinglePlayerProvider();
+    }
+    public IWorldProvider getWorld()
+    {
+        return new SingleWorldProvider();
     }
 
     public String getProviderName()

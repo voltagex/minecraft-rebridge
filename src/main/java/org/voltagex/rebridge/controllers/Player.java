@@ -23,9 +23,9 @@ public class Player
     public ServiceResponse getName()
     {
         Simple response = new Simple();
-        if (provider.player().playerIsOnServer())
+        if (provider.getPlayer().playerIsOnServer())
         {
-            response.setKeyValue("name", provider.player().getName());
+            response.setKeyValue("name", provider.getPlayer().getName());
         }
 
         else
@@ -38,9 +38,9 @@ public class Player
 
     public ServiceResponse getPosition()
     {
-        if (provider.player().playerIsOnServer())
+        if (provider.getPlayer().playerIsOnServer())
         {
-            return provider.player().getPosition();
+            return provider.getPlayer().getPosition();
         }
 
         else
@@ -51,9 +51,9 @@ public class Player
 
     public ServiceResponse postPosition(Position position)
     {
-        if (provider.player().playerIsOnServer())
+        if (provider.getPlayer().playerIsOnServer())
         {
-            provider.player().setPosition(position);
+            provider.getPlayer().setPosition(position);
             return new StatusResponse(NanoHTTPD.Response.Status.ACCEPTED);
         }
 
@@ -73,7 +73,7 @@ public class Player
 
     public ServiceResponse getInventory()
     {
-        ObjectResponse response = new ObjectResponse(provider.player().getInventory());
+        ObjectResponse response = new ObjectResponse(provider.getPlayer().getInventory());
         if (response.getReturnedObject() == null)
         {
             return NoPlayerResponse();

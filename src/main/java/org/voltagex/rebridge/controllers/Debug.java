@@ -1,18 +1,22 @@
 package org.voltagex.rebridge.controllers;
 
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import fi.iki.elonen.NanoHTTPD;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.ResourceLocation;
+import net.minecraft.util.text.TextComponentString;
+import net.minecraftforge.client.event.RenderGameOverlayEvent;
 import net.minecraftforge.fml.common.registry.GameData;
+import org.voltagex.rebridge.Consts;
+import org.voltagex.rebridge.Router;
+import org.voltagex.rebridge.api.entities.*;
 import org.voltagex.rebridge.providers.IMinecraftProvider;
 import org.voltagex.rebridge.api.annotations.Controller;
 import org.voltagex.rebridge.api.annotations.Parameters;
-import org.voltagex.rebridge.api.entities.GameSettingsResponse;
-import org.voltagex.rebridge.api.entities.ObjectResponse;
-import org.voltagex.rebridge.api.entities.ServiceResponse;
-import org.voltagex.rebridge.api.entities.StreamResponse;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -20,12 +24,14 @@ import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
+import com.google.gson.Gson;
 
 @Controller
 public class Debug
 {
     private static net.minecraft.client.Minecraft minecraft = Minecraft.getMinecraft();
-
+    private static Gson gson;
+    private IMinecraftProvider provider;
     private Debug()
     {
 
@@ -33,7 +39,19 @@ public class Debug
 
     public Debug(IMinecraftProvider provider)
     {
+        this.provider = provider;
+    }
 
+    public JsonResponse getRebridge()
+    {
+        JsonObject root = new JsonObject();
+        root.addProperty("Provider",provider.getProviderName());
+        return new JsonResponse(NanoHTTPD.Response.Status.OK, root);
+    }
+
+    public NanoHTTPD.Response getRoutes()
+    {
+        return Router.DebugRoutes();
     }
 
     //todo: can this still be done?
@@ -47,6 +65,11 @@ public class Debug
 
     public ObjectResponse getSprites() throws NoSuchFieldException, IllegalAccessException
     {
+        if (minecraft == null)
+        {
+            return new ObjectResponse("not available");
+        }
+
         Field tmb = minecraft.getTextureMapBlocks().getClass().getDeclaredField("mapRegisteredSprites");
         tmb.setAccessible(true);
         HashMap<String, TextureAtlasSprite> map = ((HashMap<String, TextureAtlasSprite>) tmb.get(minecraft.getTextureMapBlocks()));
@@ -57,6 +80,7 @@ public class Debug
     {
         return new GameSettingsResponse(minecraft.gameSettings);
     }
+
 
     @Parameters(Names={"Name", "Value"})
     public void postGameSettings(String Name, String Value) throws NoSuchFieldException, IllegalAccessException
@@ -73,6 +97,8 @@ public class Debug
             }
             settingField.setAccessible(true);
             settingField.set(minecraft.gameSettings, settingType.cast(settingAsObject));
+
+            minecraft.thePlayer.addChatComponentMessage(new TextComponentString("Rebridge: Set " + Name + " to " + Value));
         }
         catch (ClassNotFoundException e)
         {
