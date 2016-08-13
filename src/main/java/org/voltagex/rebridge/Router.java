@@ -8,6 +8,7 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
+import com.google.gson.internal.LinkedTreeMap;
 import fi.iki.elonen.NanoHTTPD;
 import org.reflections.Reflections;
 import org.reflections.scanners.*;
@@ -15,23 +16,14 @@ import org.reflections.util.ClasspathHelper;
 import org.reflections.util.ConfigurationBuilder;
 import org.voltagex.rebridge.api.annotations.Controller;
 import org.voltagex.rebridge.api.annotations.Parameters;
-import org.voltagex.rebridge.api.entities.Action;
-import org.voltagex.rebridge.api.entities.Position;
-import org.voltagex.rebridge.api.entities.ServiceResponse;
-import org.voltagex.rebridge.api.entities.Simple;
+import org.voltagex.rebridge.api.entities.*;
 import org.voltagex.rebridge.providers.IMinecraftProvider;
 import org.voltagex.rebridge.serializers.PositionResponseSerializer;
 import org.voltagex.rebridge.serializers.SimpleResponseSerializer;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.lang.reflect.Constructor;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
-import java.lang.reflect.Type;
-import java.net.URL;
+import java.lang.reflect.*;
+
 import java.util.*;
 
 import static fi.iki.elonen.NanoHTTPD.newFixedLengthResponse;
@@ -66,6 +58,7 @@ public class Router
         gsonBuilder.registerTypeAdapter(Simple.class, new SimpleResponseSerializer());
         gsonBuilder.registerTypeAdapter(Position.class, new PositionResponseSerializer());
         gsonBuilder = provider.registerExtraTypeAdapters(gsonBuilder);
+        gsonBuilder.serializeNulls();
         gson = gsonBuilder.create();
 
         Reflections reflections;
@@ -85,18 +78,25 @@ public class Router
 
     public NanoHTTPD.Response route(NanoHTTPD.IHTTPSession session)
     {
-        // /someMod/someAction/parameter/anotherParameter
-        // /Player/Position
-
         boolean needsMinecraftProvider = true;
+
         Action actionToBeRouted;
         String httpMethod = session.getMethod().name();
-
         String uri = session.getUri();
+        WebResourceRouter webRouter = new WebResourceRouter(session, "/web/");
+
         if (uri.equals("/") && httpMethod.equals("GET"))
         {
-            return RouteToHTML(session);
+            return webRouter.sendIndex();
         }
+
+        else if (uri.startsWith("/web/"))
+        {
+            return webRouter.responseFromResource(uri);
+        }
+
+
+
         List<String> segments = new LinkedList<String>(Arrays.asList(uri.split("/")));
         // 0: /
         // 1: Player
@@ -111,44 +111,22 @@ public class Router
         // 0: Player
         // 1: Position
 
+        //most of the time this is the controller name. Should it be renamed?
         String action = segments.get(0);
         segments.remove(0);
 
         String method;
 
         Class<?> selectedController;
-        List<Class<?>> modControllers;
 
-        //if the first parameter is actually a mod namespace
-        //todo: fix this so the actual controller name can be passed in too
-        if (registeredControllers.containsKey(action))
+
+        method = segments.get(0);
+        segments.remove(0);
+        selectedController = findControllerForRequest(action);
+        if (selectedController == null)
         {
-            String modName = action;
-            String modController = segments.get(0);
-            method = segments.get(1);
-            segments.remove(0);
-            segments.remove(0);
-
-            modControllers = registeredControllers.get(modName);
-            needsMinecraftProvider = false;
-            selectedController = findControllerForRequest(modController, modControllers);
-
-            if (selectedController == null)
-            {
-                return processBadRequest(session, "Controller for " + method + " in " + modName + " not found");
-            }
-        }
-
-        else
-        {
-            method = segments.get(0);
-            segments.remove(0);
-            selectedController = findControllerForRequest(action);
-            if (selectedController == null)
-            {
-                //todo: string.Format
-                return processBadRequest(session, "Controller for " + action + " not found"); //todo: return 404
-            }
+            //todo: string.Format
+            return processBadRequest(session, "Controller for " + action + " not found"); //todo: return 404
         }
 
         try
@@ -187,28 +165,7 @@ public class Router
         }
     }
 
-    private NanoHTTPD.Response RouteToHTML(NanoHTTPD.IHTTPSession session)
-    {
-        return responseFromResource("index.html");
-    }
 
-    private NanoHTTPD.Response responseFromResource(String resourceName)
-    {
-        ClassLoader loader = getClass().getClassLoader();
-        URL resource = loader.getResource(resourceName);
-        File resourceFile = new File(resource.getFile());
-
-        try
-        {
-            return newFixedLengthResponse(NanoHTTPD.Response.Status.OK, "text/html", new FileInputStream(resourceFile), resourceFile.length());
-        }
-
-        catch (FileNotFoundException fileNotFound)
-        {
-            //todo: proper JSON error here
-            return newFixedLengthResponse(NanoHTTPD.Response.Status.NOT_FOUND, "text/plain", resourceName + " not found");
-        }
-    }
 
     private NanoHTTPD.Response processGet(NanoHTTPD.IHTTPSession session, IMinecraftProvider provider, Action actionToBeRouted)
     {
@@ -228,6 +185,17 @@ public class Router
             {
                 retVal = actionToBeRouted.getMethod().invoke(controllerInstance);
             }
+
+            if (retVal instanceof NanoHTTPD.Response)
+            {
+                return (NanoHTTPD.Response)retVal;
+            }
+
+            if (retVal instanceof JsonResponse)
+            {
+                return ((JsonResponse)retVal).toResponse();
+            }
+
 
             NanoHTTPD.Response.IStatus status = NanoHTTPD.Response.Status.OK;
             if (retVal instanceof ServiceResponse)
@@ -273,14 +241,43 @@ public class Router
 
         try
         {
-            Type type = findTypeForRequest(actionToBeRouted.getMethod());
-            Object request = gson.fromJson(bodyMap.get("postData"), type);
+            Method methodToInvoke = actionToBeRouted.getMethod();
+            Parameters parametersNeededForRequest = methodToInvoke.getAnnotation(Parameters.class);
+
+            if (parametersNeededForRequest == null)
+            {
+                return processBadRequest(session,
+                                         String.format("Attempting to post to %s on %s, which doesn't have a parameter annotation yet",
+                                                       methodToInvoke.getName(), actionToBeRouted.getController().getName()));
+            }
+
+            Object request = gson.fromJson(bodyMap.get("postData"), new Object().getClass());
+            LinkedTreeMap<?,?> requestAsTreeMap = null;
+            if (request instanceof LinkedTreeMap)
+            {
+                requestAsTreeMap = (LinkedTreeMap)request;
+            }
+
+            ArrayList<Object> parametersForMethod = new ArrayList<Object>();
+            //Class<?>[] parameterTypes = methodToInvoke.getParameterTypes();
+            String[] parameterNames = parametersNeededForRequest.Names();
+
+            for (int i = 0; i<parameterNames.length; i++)
+            {
+                if (requestAsTreeMap.containsKey(parameterNames[i]))
+                {
+                    //Class<?> parameterType = parameterTypes[i];
+                    //Object parameterValue = parameterType.cast());
+                    parametersForMethod.add(requestAsTreeMap.get(parameterNames[i]).toString());
+                }
+            }
+
 
             //todo: didn't we just do this logic before?
             Object controllerInstance = provider == null ? actionToBeRouted.getController().newInstance() : actionToBeRouted.getController().newInstance(provider);
             if (request != null)
             {
-                actionToBeRouted.getMethod().invoke(controllerInstance, request);
+                methodToInvoke.invoke(controllerInstance, parametersForMethod.toArray());
             }
 
             else
@@ -331,7 +328,6 @@ public class Router
         return selectedMethod.getParameterTypes()[0];
     }
 
-
     private String[] getParametersForMethod(Method selectedMethod, List<String> urlSegments)
     {
         //this kinda sucks
@@ -355,6 +351,37 @@ public class Router
 
         return callingParameters;
     }
+
+    public static NanoHTTPD.Response DebugRoutes()
+    {
+        JsonObject root = new JsonObject();
+
+        for (Class<?> controller : avaliableControllers)
+        {
+            root.add(controller.getSimpleName(), gson.toJsonTree(getAllMethodsForController(controller)));
+        }
+
+        return new JsonResponse(NanoHTTPD.Response.Status.OK, root).toResponse();
+    }
+
+    private static ArrayList<String> getAllMethodsForController(Class<?> controller)
+    {
+        Method[] methods = controller.getDeclaredMethods();
+        ArrayList<String> httpMethods = new ArrayList<String>();
+        for (Method method : methods)
+        {
+            String name = method.getName();
+            //todo: work out how to present routes that require post
+//          if (name.startsWith("post") || name.startsWith("get"))
+            if (name.startsWith("get"))
+            {
+                name = name.replace("get","");
+                httpMethods.add(name);
+            }
+        }
+        return httpMethods;
+    }
+
 
     //todo: clean up bad request processing
     private NanoHTTPD.Response processBadRequest(NanoHTTPD.IHTTPSession session)
