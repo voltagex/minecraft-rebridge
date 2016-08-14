@@ -26,4 +26,11 @@ function setClientSetting(key, value) {
     postData['Name'] = key;
     postData['Value'] = value;
     qwest.post('/Debug/GameSettings', postData, {dataType: "json"});
+    return false;
 }
+
+function giveItem(name, amount) {
+    qwest.post('/Player/Item', {"ItemName": name, "Amount": amount}, {dataType: "json"} );
+    return false;
+}
+

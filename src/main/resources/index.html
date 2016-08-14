@@ -9,27 +9,45 @@ Welcome to a Rebridge Mod Server
 
 Available routes:
 <div id="routesDiv"></div>
-
-<br />
+<br/>
 
 <p>Set client setting</p>
-<br> Name: <input type="text" id="settingName"> Value: <input type="text" id="settingValue"><button id="sendSetting">Set</button>
+Name: <input type="text" id="settingName"> Value: <input type="text" id="settingValue">
+<button id="sendSetting">Set</button>
 
 <script src="//cdnjs.cloudflare.com/ajax/libs/qwest/4.4.5/qwest.min.js"></script>
 <script src="//cdnjs.cloudflare.com/ajax/libs/underscore.js/1.8.3/underscore-min.js"></script>
 
+<br>
+
+<a href="#" id="giveDiamond">Give player 1 diamond</a><br>
+<a href="#" id="giveMoreDiamond">Give player 64 diamond</a>
+
 <script src="scripts.js"></script>
 <script>
-    window.onload =  function () {
-        renderRoutes('routesDiv')
-    }
+    window.onload = function () {
+        renderRoutes('routesDiv');
 
-    var setButton = document.getElementById('sendSetting');
-    setButton.addEventListener('click', function () {
-        var key = document.getElementById('settingName').value;
-        var value = document.getElementById('settingValue').value;
-        setClientSetting(key,value);
-    })
+        var setButton = document.getElementById('sendSetting');
+        var diamondLink = document.getElementById('giveDiamond');
+        var moreDiamondLink = document.getElementById('giveMoreDiamond');
+        setButton.addEventListener('click', function () {
+            var key = document.getElementById('settingName').value;
+            var value = document.getElementById('settingValue').value;
+            setClientSetting(key, value);
+        });
+
+        diamondLink.addEventListener('click', function () {
+            giveItem("Diamond", "1")
+        });
+
+        moreDiamondLink.addEventListener('click', function () {
+            giveItem("Diamond", "64")
+        })
+    };
+
+
+
 
 
 </script>

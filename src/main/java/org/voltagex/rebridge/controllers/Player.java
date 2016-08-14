@@ -1,6 +1,7 @@
 package org.voltagex.rebridge.controllers;
 
 import fi.iki.elonen.NanoHTTPD;
+import org.voltagex.rebridge.api.annotations.Parameters;
 import org.voltagex.rebridge.providers.IMinecraftProvider;
 import org.voltagex.rebridge.api.annotations.Controller;
 import org.voltagex.rebridge.api.entities.*;
@@ -71,14 +72,14 @@ public class Player
         return response;
     }
 
-    public ServiceResponse getInventory()
+    public JsonResponse getInventory()
     {
-        ObjectResponse response = new ObjectResponse(provider.getPlayer().getInventory());
-        if (response.getReturnedObject() == null)
-        {
-            return NoPlayerResponse();
-        }
+        return provider.getPlayer().getInventory();
+    }
 
-        return response;
+    @Parameters(Names={"ItemName", "Amount"})
+    public Boolean postItem(String ItemName, String Amount) throws NanoHTTPD.ResponseException
+    {
+        return provider.getPlayer().giveItem(ItemName,Integer.parseInt(Amount));
     }
 }

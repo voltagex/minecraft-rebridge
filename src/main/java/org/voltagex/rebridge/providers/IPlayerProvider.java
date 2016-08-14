@@ -1,6 +1,7 @@
 package org.voltagex.rebridge.providers;
 
-import org.voltagex.rebridge.api.entities.ObjectResponse;
+import fi.iki.elonen.NanoHTTPD;
+import org.voltagex.rebridge.api.entities.JsonResponse;
 import org.voltagex.rebridge.api.entities.Position;
 
 public interface IPlayerProvider
@@ -11,5 +12,7 @@ public interface IPlayerProvider
     Position getPosition();
     void setPosition(Position position);
 
-    ObjectResponse getInventory();
+    JsonResponse getInventory();
+
+    Boolean giveItem(String ItemName, int Amount) throws NanoHTTPD.ResponseException;
 }

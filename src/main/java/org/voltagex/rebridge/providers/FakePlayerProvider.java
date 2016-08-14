@@ -1,6 +1,6 @@
 package org.voltagex.rebridge.providers;
 
-import org.voltagex.rebridge.api.entities.ObjectResponse;
+import org.voltagex.rebridge.api.entities.JsonResponse;
 import org.voltagex.rebridge.api.entities.Position;
 
 public class FakePlayerProvider implements IPlayerProvider
@@ -25,7 +25,13 @@ public class FakePlayerProvider implements IPlayerProvider
         return;
     }
 
-    public ObjectResponse getInventory()
+    public JsonResponse getInventory()
+    {
+        return null;
+    }
+
+    @Override
+    public Boolean giveItem(String ItemName, int Amount)
     {
         return null;
     }

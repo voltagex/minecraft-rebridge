@@ -1,39 +1,24 @@
 package org.voltagex.rebridge.api.entities;
 
+import net.minecraft.item.Item;
+import net.minecraft.item.ItemStack;
+
 public class InventoryItem
 {
     private int id;
     private String name;
-    private int stackSize;
+    private String displayName;
 
-    public int getStackSize()
+    public InventoryItem(Item item)
     {
-        return stackSize;
+        id = item.getIdFromItem(item);
+        name = item.getUnlocalizedName();
     }
 
-    public void setStackSize(int stackSize)
+    public InventoryItem(ItemStack itemStack)
     {
-        this.stackSize = stackSize;
-    }
-
-    public int getId()
-    {
-        return id;
-    }
-
-    public void setId(int id)
-    {
-        this.id = id;
-    }
-
-    public String getName()
-    {
-        return name;
-    }
-
-    public void setName(String name)
-    {
-        this.name = name;
+        this(itemStack.getItem());
+        displayName = itemStack.getDisplayName();
     }
 }
 

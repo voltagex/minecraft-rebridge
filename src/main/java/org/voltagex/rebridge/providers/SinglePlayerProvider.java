@@ -1,12 +1,14 @@
 package org.voltagex.rebridge.providers;
 
+import fi.iki.elonen.NanoHTTPD;
 import net.minecraft.client.Minecraft;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.registry.RegistryNamespaced;
+import net.minecraftforge.fml.common.registry.GameData;
 import org.voltagex.rebridge.api.entities.InventoryItem;
-import org.voltagex.rebridge.api.entities.ObjectResponse;
+import org.voltagex.rebridge.api.entities.JsonResponse;
 import org.voltagex.rebridge.api.entities.Position;
 
 import java.util.ArrayList;
@@ -68,8 +70,9 @@ public class SinglePlayerProvider implements IPlayerProvider
         return minecraft.thePlayer.getName();
     }
 
-    public ObjectResponse getInventory()
+    public JsonResponse getInventory()
     {
+        //todo: Clean this up so it's only doing JSON stuff closer to the controller/action
         ArrayList<InventoryItem> list = new ArrayList<InventoryItem>();
 
         if (minecraft.thePlayer == null)
@@ -78,28 +81,31 @@ public class SinglePlayerProvider implements IPlayerProvider
         }
 
         ItemStack[] minecraftInventory = minecraft.thePlayer.inventory.mainInventory;
-        RegistryNamespaced registry = net.minecraftforge.fml.common.registry.GameData.getItemRegistry();
+        //Deprecated but I can't find the replacement
+        RegistryNamespaced registry = GameData.getItemRegistry();
+
         for (ItemStack item : minecraftInventory)
         {
-
-
             if (item == null)
             {
                 continue;
             }
 
-            Item innerItem = item.getItem();
-            InventoryItem newItem = new InventoryItem();
-            newItem.setName(item.getDisplayName());
-            newItem.setStackSize(item.stackSize);
-            newItem.setId(Item.getIdFromItem(innerItem));
-
+            InventoryItem newItem = new InventoryItem(item);
             list.add(newItem);
         }
 
-        return new ObjectResponse(list);
+        return new JsonResponse(list);
     }
 
-
-
+    @Override
+    public Boolean giveItem(String ItemName, int Amount) throws NanoHTTPD.ResponseException
+    {
+        Item item = Item.getByNameOrId(ItemName.toLowerCase());
+        if (item == null)
+        {
+            throw new NanoHTTPD.ResponseException(NanoHTTPD.Response.Status.NOT_FOUND, "Item " + ItemName + " not found");
+        }
+        return minecraft.thePlayer.inventory.addItemStackToInventory(new ItemStack(item,Amount));
+    }
 }
